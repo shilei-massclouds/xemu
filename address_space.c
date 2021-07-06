@@ -8,14 +8,14 @@
 #include "util.h"
 
 static uint64_t
-read64_dummy(void *dev, uint64_t addr)
+read_dummy(void *dev, uint64_t addr, size_t size)
 {
     panic("%s: bad addr(0x%llx)!\n", __func__, addr);
     return 0;
 }
 
 static void
-write64_dummy(void *dev, uint64_t addr, uint64_t data)
+write_dummy(void *dev, uint64_t addr, uint64_t data, size_t size)
 {
     panic("%s: bad addr(0x%llx)\n", __func__, addr);
 }
@@ -26,8 +26,8 @@ init_address_space(address_space *as, uint64_t start, uint64_t end)
     as->start = start;
     as->end   = end;
 
-    as->ops.read64_op = &read64_dummy;
-    as->ops.write64_op = &write64_dummy;
+    as->ops.read_op = read_dummy;
+    as->ops.write_op = write_dummy;
 
     as->device = NULL;
 
@@ -56,7 +56,7 @@ read64(address_space *as, uint64_t addr)
         child = child->sibling;
     }
 
-    return as->ops.read64_op(as->device, addr);
+    return as->ops.read_op(as->device, addr, 8);
 }
 
 void
@@ -69,7 +69,41 @@ write64(address_space *as, uint64_t addr, uint64_t data)
             write64(child, addr - child->start, data);
             return;
         }
+
+        child = child->sibling;
     }
 
-    as->ops.write64_op(as->device, addr, data);
+    as->ops.write_op(as->device, addr, data, 8);
+}
+
+uint32_t
+read32(address_space *as, uint64_t addr)
+{
+    address_space *child = as->children;
+
+    while (child) {
+        if (addr >= child->start && addr <= child->end)
+            return read32(child, addr - child->start);
+
+        child = child->sibling;
+    }
+
+    return as->ops.read_op(as->device, addr, 4);
+}
+
+void
+write32(address_space *as, uint64_t addr, uint32_t data)
+{
+    address_space *child = as->children;
+
+    while (child) {
+        if (addr >= child->start && addr <= child->end) {
+            write32(child, addr - child->start, data);
+            return;
+        }
+
+        child = child->sibling;
+    }
+
+    as->ops.write_op(as->device, addr, data, 4);
 }

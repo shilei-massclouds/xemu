@@ -17,8 +17,8 @@ typedef struct _address_space
     uint64_t end;
 
     struct {
-        uint64_t (*read64_op)(void *dev, uint64_t addr);
-        void (*write64_op)(void *dev, uint64_t addr, uint64_t data);
+        uint64_t (*read_op)(void *dev, uint64_t addr, size_t size);
+        void (*write_op)(void *dev, uint64_t addr, uint64_t data, size_t size);
     } ops;
 
     void *device;
@@ -31,6 +31,9 @@ typedef struct _address_space
 void init_address_space(address_space *as, uint64_t start, uint64_t end);
 
 void register_address_space(address_space *parent, address_space *child);
+
+uint32_t read32(address_space *as, uint64_t addr);
+void write32(address_space *as, uint64_t addr, uint32_t data);
 
 uint64_t read64(address_space *as, uint64_t addr);
 void write64(address_space *as, uint64_t addr, uint64_t data);

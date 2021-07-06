@@ -22,28 +22,58 @@ typedef struct _rom
     size_t mem_size;
 } rom_t;
 
-static uint64_t
-rom_read64(void *dev, uint64_t addr)
+
+static uint8_t *
+_rom_ptr(void *dev, uint64_t addr, size_t size)
 {
     rom_t *rom = (rom_t *) dev;
-    if (addr + 8 >= rom->mem_size) {
+    if (addr + size >= rom->mem_size) {
         panic("%s: 0x%llx out of limit 0x%lx\n",
               __func__, addr, rom->mem_size);
     }
 
-    return *((uint64_t *)(rom->mem_ptr + addr));
+    return (rom->mem_ptr + addr);
+}
+
+static uint64_t
+rom_read(void *dev, uint64_t addr, size_t size)
+{
+    uint8_t *ptr = _rom_ptr(dev, addr, size);
+
+    switch (size)
+    {
+    case 8:
+        return *((uint64_t *)ptr);
+    case 4:
+        return *((uint32_t *)ptr);
+    case 2:
+        return *((uint16_t *)ptr);
+    case 1:
+        return *((uint8_t *)ptr);
+    }
+
+    panic("%s: bad size %d\n", __func__, size);
+    return 0;
 }
 
 static void
-rom_write64(void *dev, uint64_t addr, uint64_t data)
+rom_write(void *dev, uint64_t addr, uint64_t data, size_t size)
 {
-    rom_t *rom = (rom_t *) dev;
-    if (addr + 8 >= rom->mem_size) {
-        panic("%s: 0xllx out of limit 0x%lx\n",
-              __func__, addr, rom->mem_size);
+    uint8_t *ptr = _rom_ptr(dev, addr, size);
+
+    switch (size)
+    {
+    case 8:
+        *((uint64_t *)ptr) = data;
+    case 4:
+        *((uint32_t *)ptr) = (uint32_t)data;
+    case 2:
+        *((uint16_t *)ptr) = (uint16_t)data;
+    case 1:
+        *((uint8_t *)ptr) = (uint8_t)data;
     }
 
-    *((uint64_t *)(rom->mem_ptr + addr)) = data;
+    panic("%s: bad size %d\n", __func__, size);
 }
 
 device_t *
@@ -61,8 +91,8 @@ rom_init(address_space *parent_as)
                        ROM_ADDRESS_SPACE_START,
                        ROM_ADDRESS_SPACE_END);
 
-    rom->dev.as.ops.read64_op = &rom_read64;
-    rom->dev.as.ops.write64_op = &rom_write64;
+    rom->dev.as.ops.read_op = rom_read;
+    rom->dev.as.ops.write_op = rom_write;
 
     rom->dev.as.device = rom;
 
