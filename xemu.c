@@ -23,8 +23,8 @@ decode(uint32_t inst)
 
       dec32(inst, &op, &rd, &rs1, &rs2, &imm, &csr_addr);
 
-      printf("op: %x; rd: %s; rs1: %s; rs2: %s; imm: %lx; csr: %x\n",
-             op, reg_name(rd), reg_name(rs1), reg_name(rs2),
+      printf("op: %s; rd: %s; rs1: %s; rs2: %s; imm: %lx; csr: %x\n",
+             op_name(op), reg_name(rd), reg_name(rs1), reg_name(rs2),
              imm, csr_addr);
 }
 

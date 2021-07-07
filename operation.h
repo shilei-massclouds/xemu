@@ -124,7 +124,10 @@ typedef enum _op_t
     AMO_MINUW,
     AMO_MAXUW,
 
-    OP_MAX,
+    OP_MAX_NUM,
 } op_t;
+
+const char *
+op_name(op_t op);
 
 #endif /* OP_H */

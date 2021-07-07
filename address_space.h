@@ -3,7 +3,7 @@
  */
 
 #ifndef ADDRESS_SPACE_H
-#define ADDRESS_SAPCE_H
+#define ADDRESS_SPACE_H
 
 #include <stdio.h>
 #include <stdint.h>
