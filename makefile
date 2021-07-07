@@ -13,13 +13,14 @@ INC = -I./
 TARGET = xemu
 
 OBJS = $(subst .c,.o, $(wildcard *.c))
+HEADERS = $(wildcard *.h)
 
 all:$(TARGET) clean
 
 %.o:%.c
 	$(CC) $(CFLAGS) $(INC) -o $@ -c $<
 
-$(TARGET):$(OBJS)
+$(TARGET):$(OBJS) $(HEADERS)
 	$(CC) -o $@ $^
 	./$(TARGET)
 

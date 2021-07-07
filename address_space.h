@@ -5,6 +5,7 @@
 #ifndef ADDRESS_SPACE_H
 #define ADDRESS_SAPCE_H
 
+#include <stdio.h>
 #include <stdint.h>
 
 /* Sv39 for riscv64 */

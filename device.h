@@ -5,6 +5,8 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#include "address_space.h"
+
 typedef struct _device
 {
     const char *name;
