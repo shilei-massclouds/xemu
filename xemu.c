@@ -14,6 +14,47 @@
 #include "csr.h"
 #include "regfile.h"
 
+/*
+static void
+trace_decode(op_t       op,
+             uint32_t   rd,
+             uint32_t   rs1,
+             uint32_t   rs2,
+             uint64_t   imm,
+             uint32_t   csr_addr)
+{
+    printf("op: %s; rd: %s; rs1: %s; rs2: %s; imm: %lx\n",
+           op_name(op),
+           reg_name(rd), reg_name(rs1), reg_name(rs2), imm);
+
+    if (op >= CSRRW && op <= CSRRCI)
+        printf("csr: %s\n\n", csr_name(csr_addr));
+    else
+        printf("\n");
+}
+*/
+
+static void
+trace_execute(op_t       op,
+              uint32_t   rd,
+              uint32_t   rs1,
+              uint32_t   rs2,
+              uint64_t   imm,
+              uint32_t   csr_addr)
+{
+    printf("op: %s; rd: %s(0x%0lx); rs1: %s(0x%0lx); rs2: %s(0x%0lx); imm: 0x%0lx\n",
+           op_name(op),
+           reg_name(rd), reg[rd],
+           reg_name(rs1), reg[rs1],
+           reg_name(rs2), reg[rs2],
+           imm);
+
+    if (op >= CSRRW && op <= CSRRCI)
+        printf("csr: %s\n\n", csr_name(csr_addr));
+    else
+        printf("\n");
+}
+
 int
 main()
 {
@@ -32,7 +73,12 @@ main()
     rom = rom_init(&root_as);
     rom_add_file(rom, "image/head.bin");
 
+    ram_init(&root_as);
+
     while (1) {
+        uint64_t next_pc;
+        uint64_t new_pc;
+
         op_t      op;
         uint32_t  rd;
         uint32_t  rs1;
@@ -43,18 +89,16 @@ main()
         inst = read32(&root_as, pc);
         printf("[0x%lx]: \n", pc);
 
-        pc += decode(inst, &op, &rd, &rs1, &rs2, &imm, &csr_addr);
+        next_pc = pc + decode(inst, &op, &rd, &rs1, &rs2, &imm, &csr_addr);
 
-        printf("op: %s; rd: %s; rs1: %s; rs2: %s; imm: %lx\n",
-               op_name(op),
-               reg_name(rd), reg_name(rs1), reg_name(rs2), imm);
+        //trace_decode(op, rd, rs1, rs2, imm, csr_addr);
 
-        if (op >= CSRRW && op <= CSRRCI)
-            printf("csr: %s\n\n", csr_name(csr_addr));
-        else
-            printf("\n");
+        new_pc = execute(&root_as, pc, next_pc,
+                         op, rd, rs1, rs2, imm, csr_addr);
 
-        execute(op, rd, rs1, rs2, imm, csr_addr);
+        trace_execute(op, rd, rs1, rs2, imm, csr_addr);
+
+        pc = new_pc ? new_pc : next_pc;
     }
 
     return 0;

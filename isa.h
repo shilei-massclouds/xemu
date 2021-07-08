@@ -50,16 +50,4 @@
 #define TL_PARAM_AND    0x2
 #define TL_PARAM_SWAP   0x3
 
-
-#define BITS(SRC, HIGH, LOW) \
-    ((SRC >> LOW) & ((1UL << (HIGH - LOW + 1UL)) - 1UL))
-
-#define BIT(SRC, INDEX) ((SRC >> INDEX) & 1UL)
-
-#define BITS_IN_PLACE(SRC, HIGH, LOW) \
-    ((((1UL << (HIGH - LOW + 1UL)) - 1UL) << LOW) & SRC)
-
-#define EXPAND_BIT(SRC, INDEX, NUM) \
-    (((SRC >> INDEX) & 1UL) ? ((1UL << NUM) - 1UL) : 0)
-
 #endif  /* _ISA_H */

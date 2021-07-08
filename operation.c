@@ -6,7 +6,7 @@
 #include "util.h"
 
 const char *op_names[] = {
-    "NOOP",
+    "NOP",
 
     "LUI", "AUIPC",
 

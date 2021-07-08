@@ -107,3 +107,67 @@ write32(address_space *as, uint64_t addr, uint32_t data)
 
     as->ops.write_op(as->device, addr, data, 4);
 }
+
+uint16_t
+read16(address_space *as, uint64_t addr)
+{
+    address_space *child = as->children;
+
+    while (child) {
+        if (addr >= child->start && addr <= child->end)
+            return read16(child, addr - child->start);
+
+        child = child->sibling;
+    }
+
+    return as->ops.read_op(as->device, addr, 2);
+}
+
+void
+write16(address_space *as, uint64_t addr, uint16_t data)
+{
+    address_space *child = as->children;
+
+    while (child) {
+        if (addr >= child->start && addr <= child->end) {
+            write16(child, addr - child->start, data);
+            return;
+        }
+
+        child = child->sibling;
+    }
+
+    as->ops.write_op(as->device, addr, data, 2);
+}
+
+uint8_t
+read8(address_space *as, uint64_t addr)
+{
+    address_space *child = as->children;
+
+    while (child) {
+        if (addr >= child->start && addr <= child->end)
+            return read8(child, addr - child->start);
+
+        child = child->sibling;
+    }
+
+    return as->ops.read_op(as->device, addr, 1);
+}
+
+void
+write8(address_space *as, uint64_t addr, uint8_t data)
+{
+    address_space *child = as->children;
+
+    while (child) {
+        if (addr >= child->start && addr <= child->end) {
+            write8(child, addr - child->start, data);
+            return;
+        }
+
+        child = child->sibling;
+    }
+
+    as->ops.write_op(as->device, addr, data, 1);
+}

@@ -58,18 +58,22 @@ dec32(uint32_t  inst,
     {
     case OP_LUI:
         *op = LUI;
+        *imm = U_IMM(inst);
         break;
 
     case OP_AUIPC:
         *op = AUIPC;
+        *imm = U_IMM(inst);
         break;
 
     case OP_JAL:
         *op = JAL;
+        *imm = J_IMM(inst);
         break;
 
     case OP_JALR:
         *op = JALR;
+        *imm = I_IMM(inst);
         break;
 
     case OP_BRANCH:

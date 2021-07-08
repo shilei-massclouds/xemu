@@ -33,6 +33,12 @@ void init_address_space(address_space *as, uint64_t start, uint64_t end);
 
 void register_address_space(address_space *parent, address_space *child);
 
+uint8_t read8(address_space *as, uint64_t addr);
+void write8(address_space *as, uint64_t addr, uint8_t data);
+
+uint16_t read16(address_space *as, uint64_t addr);
+void write16(address_space *as, uint64_t addr, uint16_t data);
+
 uint32_t read32(address_space *as, uint64_t addr);
 void write32(address_space *as, uint64_t addr, uint32_t data);
 

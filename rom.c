@@ -12,9 +12,9 @@
 #include "device.h"
 
 #define ROM_ADDRESS_SPACE_START 0x0000000000001000
-#define ROM_ADDRESS_SPACE_END   0x000000000FFFF000
+#define ROM_ADDRESS_SPACE_END   0x000000000FFFFFFF
 
-typedef struct _rom
+typedef struct _rom_t
 {
     device_t dev;
 
@@ -56,26 +56,6 @@ rom_read(void *dev, uint64_t addr, size_t size)
     return 0;
 }
 
-static void
-rom_write(void *dev, uint64_t addr, uint64_t data, size_t size)
-{
-    uint8_t *ptr = _rom_ptr(dev, addr, size);
-
-    switch (size)
-    {
-    case 8:
-        *((uint64_t *)ptr) = data;
-    case 4:
-        *((uint32_t *)ptr) = (uint32_t)data;
-    case 2:
-        *((uint16_t *)ptr) = (uint16_t)data;
-    case 1:
-        *((uint8_t *)ptr) = (uint8_t)data;
-    }
-
-    panic("%s: bad size %d\n", __func__, size);
-}
-
 device_t *
 rom_init(address_space *parent_as)
 {
@@ -92,7 +72,6 @@ rom_init(address_space *parent_as)
                        ROM_ADDRESS_SPACE_END);
 
     rom->dev.as.ops.read_op = rom_read;
-    rom->dev.as.ops.write_op = rom_write;
 
     rom->dev.as.device = rom;
 
