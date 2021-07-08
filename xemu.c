@@ -11,21 +11,34 @@
 #include "decode.h"
 #include "util.h"
 
-void
+uint64_t
 decode(uint32_t inst)
 {
-      op_t      op;
-      uint32_t  rd;
-      uint32_t  rs1;
-      uint32_t  rs2;
-      uint64_t  imm;
-      uint32_t  csr_addr;
+    uint64_t  pc_inc;
+    op_t      op;
+    uint32_t  rd;
+    uint32_t  rs1;
+    uint32_t  rs2;
+    uint64_t  imm;
+    uint32_t  csr_addr;
 
-      dec32(inst, &op, &rd, &rs1, &rs2, &imm, &csr_addr);
+    if ((inst & 0x3) == 0x3) {
+        /* 32-bit instruction */
+        printf("inst: %0x\n", inst);
+        dec32(inst, &op, &rd, &rs1, &rs2, &imm, &csr_addr);
+        pc_inc = 4;
+    } else {
+        /* 16-bit instruction */
+        printf("inst: %0x\n", inst & 0xFFFF);
+        dec16(inst & 0xFFFF, &op, &rd, &rs1, &rs2, &imm, &csr_addr);
+        pc_inc = 2;
+    }
 
-      printf("op: %s; rd: %s; rs1: %s; rs2: %s; imm: %lx; csr: %x\n",
-             op_name(op), reg_name(rd), reg_name(rs1), reg_name(rs2),
-             imm, csr_addr);
+    printf("op: %s; rd: %s; rs1: %s; rs2: %s; imm: %lx; csr: %x\n\n",
+           op_name(op), reg_name(rd), reg_name(rs1), reg_name(rs2),
+           imm, csr_addr);
+
+    return pc_inc;
 }
 
 int
@@ -34,6 +47,7 @@ main()
     device_t *rom;
     address_space root_as;
     uint32_t inst;
+    uint64_t pc = 0x1000;
 
     printf("XEMU startup ...\n");
 
@@ -45,13 +59,12 @@ main()
     rom = rom_init(&root_as);
     rom_add_file(rom, "image/head.bin");
 
-    inst = read32(&root_as, 0x1000);
-    printf("[0x1000]: %x\n", inst);
+    while (1) {
+        inst = read32(&root_as, pc);
+        printf("[0x%lx]: \n", pc);
 
-    if ((inst & 0x3) == 0x3)
-        decode(inst);
-    else
-        printf("This is a compressed instruction!\n");
+        pc += decode(inst);
+    }
 
     return 0;
 }
