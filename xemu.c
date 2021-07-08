@@ -5,11 +5,14 @@
 #include <stdio.h>
 
 #include "address_space.h"
-#include "device.h"
 #include "isa.h"
 #include "operation.h"
 #include "decode.h"
 #include "util.h"
+#include "device.h"
+#include "execute.h"
+#include "csr.h"
+#include "regfile.h"
 
 int
 main()
@@ -42,9 +45,16 @@ main()
 
         pc += decode(inst, &op, &rd, &rs1, &rs2, &imm, &csr_addr);
 
-        printf("op: %s; rd: %s; rs1: %s; rs2: %s; imm: %lx; csr: %x\n\n",
-               op_name(op), reg_name(rd), reg_name(rs1), reg_name(rs2),
-               imm, csr_addr);
+        printf("op: %s; rd: %s; rs1: %s; rs2: %s; imm: %lx\n",
+               op_name(op),
+               reg_name(rd), reg_name(rs1), reg_name(rs2), imm);
+
+        if (op >= CSRRW && op <= CSRRCI)
+            printf("csr: %s\n\n", csr_name(csr_addr));
+        else
+            printf("\n");
+
+        execute(op, rd, rs1, rs2, imm, csr_addr);
     }
 
     return 0;

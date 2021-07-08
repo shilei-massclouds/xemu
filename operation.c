@@ -3,6 +3,7 @@
  */
 
 #include "operation.h"
+#include "util.h"
 
 const char *op_names[] = {
     "NOOP",
@@ -43,5 +44,8 @@ const char *op_names[] = {
 const char *
 op_name(op_t op)
 {
+    if (op >= OP_MAX_NUM)
+        panic("%s: bad op %d\n", __func__, op);
+
     return op_names[op];
 }

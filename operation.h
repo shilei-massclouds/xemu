@@ -7,7 +7,7 @@
 
 typedef enum _op_t
 {
-    NOOP = 0,
+    NOP = 0,
 
     LUI,
 

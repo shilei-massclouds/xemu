@@ -73,7 +73,7 @@ dec16(uint16_t  inst,
     uint32_t opcode = BITS(inst, 1, 0);
     uint32_t funct3 = BITS(inst, 15, 13);
 
-    *op = NOOP;
+    *op = NOP;
     *rd = 0;
     *rs1 = 0;
     *rs2 = 0;
@@ -126,7 +126,7 @@ dec16(uint16_t  inst,
             break;
 
         default:
-            panic("%s: bad instruction (0x%x)", inst);
+            panic("%s: bad instruction (0x%x)", __func__, inst);
         }
 
         break;
@@ -138,7 +138,7 @@ dec16(uint16_t  inst,
             /* c.nop | c.addi */
             *rd = BITS(inst, 11, 7);
             *rs1 = *rd;
-            *op = *rd ? ADDI : NOOP;
+            *op = *rd ? ADDI : NOP;
             *imm = *rd ? I_IMM(inst) : 0;
             break;
 
@@ -234,12 +234,12 @@ dec16(uint16_t  inst,
                     break;
 
                 default:
-                    panic("%s: bad instruction (0x%x)", inst);
+                    panic("%s: bad instruction (0x%x)", __func__, inst);
                 }
                 break;
 
             default:
-                panic("%s: bad instruction (0x%x)", inst);
+                panic("%s: bad instruction (0x%x)", __func__, inst);
             }
             break;
 
@@ -264,7 +264,7 @@ dec16(uint16_t  inst,
             break;
 
         default:
-            panic("%s: bad instruction (0x%x)", inst);
+            panic("%s: bad instruction (0x%x)", __func__, inst);
         }
 
         break;
@@ -345,12 +345,12 @@ dec16(uint16_t  inst,
             break;
 
         default:
-            panic("%s: bad instruction (0x%x)", inst);
+            panic("%s: bad instruction (0x%x)", __func__, inst);
         }
 
         break;
 
     default:
-        panic("%s: bad instruction (0x%x)", inst);
+        panic("%s: bad instruction (0x%x)", __func__, inst);
     }
 }
