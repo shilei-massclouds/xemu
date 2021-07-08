@@ -51,14 +51,15 @@
 #define TL_PARAM_SWAP   0x3
 
 
-#define BITS(SRC, HIGH, LOW) ((SRC >> LOW) & ((1 << (HIGH - LOW + 1)) - 1))
+#define BITS(SRC, HIGH, LOW) \
+    ((SRC >> LOW) & ((1UL << (HIGH - LOW + 1UL)) - 1UL))
 
-#define BIT(SRC, INDEX) ((SRC >> INDEX) & 1)
+#define BIT(SRC, INDEX) ((SRC >> INDEX) & 1UL)
 
 #define BITS_IN_PLACE(SRC, HIGH, LOW) \
-    ((((1 << (HIGH - LOW + 1)) - 1) << LOW) & SRC)
+    ((((1UL << (HIGH - LOW + 1UL)) - 1UL) << LOW) & SRC)
 
 #define EXPAND_BIT(SRC, INDEX, NUM) \
-    (((SRC >> INDEX) & 1) ? (((uint64_t)1 << NUM) - 1) : 0)
+    (((SRC >> INDEX) & 1UL) ? ((1UL << NUM) - 1UL) : 0)
 
 #endif  /* _ISA_H */

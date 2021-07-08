@@ -27,7 +27,7 @@ static uint8_t *
 _rom_ptr(void *dev, uint64_t addr, size_t size)
 {
     rom_t *rom = (rom_t *) dev;
-    if (addr + size >= rom->mem_size) {
+    if (addr + size > rom->mem_size) {
         panic("%s: 0x%llx out of limit 0x%lx\n",
               __func__, addr, rom->mem_size);
     }
@@ -105,6 +105,7 @@ void
 rom_add_file(device_t *dev, const char *filename)
 {
     uint8_t *ptr;
+    size_t size;
     struct stat info;
     rom_t *rom = (rom_t *) dev;
     FILE *fp = fopen(filename, "rb");
@@ -112,7 +113,9 @@ rom_add_file(device_t *dev, const char *filename)
     if (fp == NULL || fstat(fileno(fp), &info) < 0)
         panic("%s: bad filename %s\n", __func__, filename);
 
-    ptr = malloc(rom->mem_size + info.st_size);
+    size = ROUND_UP((rom->mem_size + info.st_size), 4);
+
+    ptr = calloc(1, size);
     if (ptr == NULL)
         panic("%s: alloc memory failed!\n", __func__);
 
@@ -125,7 +128,7 @@ rom_add_file(device_t *dev, const char *filename)
     if (fread(ptr + rom->mem_size, 1, info.st_size, fp) != info.st_size)
         panic("%s: read file failed!\n", __func__);
 
-    rom->mem_size += info.st_size;
+    rom->mem_size = size;
     rom->mem_ptr = ptr;
 
     fclose(fp);
