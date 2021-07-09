@@ -36,6 +36,36 @@ execute(address_space *as,
         new_pc = pc + imm;
         break;
 
+    case BEQ:
+        if (reg[rs1] == reg[rs2])
+            new_pc = pc + imm;
+        break;
+
+    case BNE:
+        if (reg[rs1] != reg[rs2])
+            new_pc = pc + imm;
+        break;
+
+    case BLT:
+        if ((int64_t)reg[rs1] < (int64_t)reg[rs2])
+            new_pc = pc + imm;
+        break;
+
+    case BGE:
+        if ((int64_t)reg[rs1] >= (int64_t)reg[rs2])
+            new_pc = pc + imm;
+        break;
+
+    case BLTU:
+        if (reg[rs1] < reg[rs2])
+            new_pc = pc + imm;
+        break;
+
+    case BGEU:
+        if (reg[rs1] >= reg[rs2])
+            new_pc = pc + imm;
+        break;
+
     case LB:
         addr = reg[rs1] + imm;
         reg[rd] = (int8_t)read8(as, addr, 0);
