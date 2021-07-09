@@ -23,14 +23,14 @@ trace_decode(op_t       op,
              uint64_t   imm,
              uint32_t   csr_addr)
 {
-    printf("op: %s; rd: %s; rs1: %s; rs2: %s; imm: %lx\n",
+    fprintf(stderr, "op: %s; rd: %s; rs1: %s; rs2: %s; imm: %lx\n",
            op_name(op),
            reg_name(rd), reg_name(rs1), reg_name(rs2), imm);
 
     if (op >= CSRRW && op <= CSRRCI)
-        printf("csr: %s\n\n", csr_name(csr_addr));
+        fprintf(stderr, "csr: %s\n\n", csr_name(csr_addr));
     else
-        printf("\n");
+        fprintf(stderr, "\n");
 }
 */
 
@@ -42,17 +42,17 @@ trace_execute(op_t       op,
               uint64_t   imm,
               uint32_t   csr_addr)
 {
-    printf("op: %s; rd: %s(0x%0lx); rs1: %s(0x%0lx); rs2: %s(0x%0lx); imm: 0x%0lx\n",
-           op_name(op),
-           reg_name(rd), reg[rd],
-           reg_name(rs1), reg[rs1],
-           reg_name(rs2), reg[rs2],
-           imm);
+    fprintf(stderr, "op: %s; rd: %s(0x%0lx); rs1: %s(0x%0lx); rs2: %s(0x%0lx); imm: 0x%0lx\n",
+            op_name(op),
+            reg_name(rd), reg[rd],
+            reg_name(rs1), reg[rs1],
+            reg_name(rs2), reg[rs2],
+            imm);
 
     if (op >= CSRRW && op <= CSRRCI)
-        printf("csr: %s\n\n", csr_name(csr_addr));
+        fprintf(stderr, "csr: %s\n\n", csr_name(csr_addr));
     else
-        printf("\n");
+        fprintf(stderr, "\n");
 }
 
 int
@@ -63,7 +63,7 @@ main()
     uint32_t inst;
     uint64_t pc = 0x1000;
 
-    printf("XEMU startup ...\n");
+    fprintf(stderr, "XEMU startup ...\n");
 
     /* Init root address space */
     init_address_space(&root_as,
@@ -74,6 +74,8 @@ main()
     rom_add_file(rom, "image/head.bin");
 
     ram_init(&root_as);
+
+    uart_init(&root_as);
 
     while (1) {
         uint64_t next_pc;
@@ -87,7 +89,7 @@ main()
         uint32_t  csr_addr;
 
         inst = read32(&root_as, pc, 0);
-        printf("[0x%lx]: \n", pc);
+        fprintf(stderr, "[0x%lx]: \n", pc);
 
         next_pc = pc + decode(inst, &op, &rd, &rs1, &rs2, &imm, &csr_addr);
 

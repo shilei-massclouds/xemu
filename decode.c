@@ -19,12 +19,12 @@ decode(uint32_t  inst,
 
     if ((inst & 0x3) == 0x3) {
         /* 32-bit instruction */
-        printf("inst: %0x\n", inst);
+        fprintf(stderr, "inst: %0x\n", inst);
         dec32(inst, op, rd, rs1, rs2, imm, csr_addr);
         pc_inc = 4;
     } else {
         /* 16-bit instruction */
-        printf("inst: %0x\n", inst & 0xFFFF);
+        fprintf(stderr, "inst: %0x\n", inst & 0xFFFF);
         dec16(inst & 0xFFFF, op, rd, rs1, rs2, imm, csr_addr);
         pc_inc = 2;
     }

@@ -22,4 +22,7 @@ rom_add_file(device_t *dev, const char *filename);
 device_t *
 ram_init(address_space *parent_as);
 
+device_t *
+uart_init(address_space *parent_as);
+
 #endif /* DEVICE_H */

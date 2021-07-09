@@ -12,13 +12,13 @@ void
 panic(const char *msg, ...)
 {
     va_list ap;
-    printf("\n#############################\n");
-    printf("PANIC: \n");
+    fprintf(stderr, "\n#############################\n");
+    fprintf(stderr, "PANIC: \n");
     va_start(ap, msg);
-    vfprintf(stdout, msg, ap);
+    vfprintf(stderr, msg, ap);
     va_end(ap);
-    printf("System exit ...\n");
-    printf("#############################\n\n");
+    fprintf(stderr, "System exit ...\n");
+    fprintf(stderr, "#############################\n\n");
 
     exit(-1);
 }

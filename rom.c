@@ -112,5 +112,5 @@ rom_add_file(device_t *dev, const char *filename)
 
     fclose(fp);
 
-    printf("%s: add file %s\n", __func__, filename);
+    fprintf(stderr, "%s: add file %s\n", __func__, filename);
 }
