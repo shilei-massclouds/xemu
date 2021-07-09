@@ -46,7 +46,7 @@ _ram_ptr(void *dev, uint32_t addr)
 }
 
 static uint64_t
-ram_read(void *dev, uint64_t addr, size_t size)
+ram_read(void *dev, uint64_t addr, size_t size, params_t params)
 {
     uint8_t *ptr = _ram_ptr(dev, addr);
 
@@ -66,28 +66,140 @@ ram_read(void *dev, uint64_t addr, size_t size)
     return 0;
 }
 
-static void
-ram_write(void *dev, uint64_t addr, uint64_t data, size_t size)
+static uint32_t
+_amo32(uint32_t orig, uint32_t data, params_t params)
 {
+    uint32_t ret = orig;
+
+    switch (params)
+    {
+    case PARAMS_LR_SC:
+        ret = 0;
+        break;
+    case PARAMS_AMO_MIN:
+        if ((int32_t)data < (int32_t)orig)
+            ret = data;
+        break;
+    case PARAMS_AMO_MAX:
+        if ((int32_t)data > (int32_t)orig)
+            ret = data;
+        break;
+    case PARAMS_AMO_MINU:
+        if (data < orig)
+            ret = data;
+        break;
+    case PARAMS_AMO_MAXU:
+        if (data > orig)
+            ret = data;
+        break;
+    case PARAMS_AMO_ADD:
+        ret = orig + data;
+        break;
+    case PARAMS_AMO_XOR:
+        ret = orig ^ data;
+        break;
+    case PARAMS_AMO_OR:
+        ret = orig | data;
+        break;
+    case PARAMS_AMO_AND:
+        ret = orig & data;
+        break;
+    case PARAMS_AMO_SWAP:
+        ret = data;
+        break;
+
+    case PARAMS_NONE:
+        ret = data;
+        break;
+    case PARAMS_LAST:
+        break;
+    }
+
+    return ret;
+}
+
+static uint64_t
+_amo64(uint64_t orig, uint64_t data, params_t params)
+{
+    uint64_t ret = orig;
+
+    switch (params)
+    {
+    case PARAMS_LR_SC:
+        ret = 0;
+        break;
+    case PARAMS_AMO_MIN:
+        if ((int64_t)data < (int64_t)orig)
+            ret = data;
+        break;
+    case PARAMS_AMO_MAX:
+        if ((int64_t)data > (int64_t)orig)
+            ret = data;
+        break;
+    case PARAMS_AMO_MINU:
+        if (data < orig)
+            ret = data;
+        break;
+    case PARAMS_AMO_MAXU:
+        if (data > orig)
+            ret = data;
+        break;
+    case PARAMS_AMO_ADD:
+        ret = orig + data;
+        break;
+    case PARAMS_AMO_XOR:
+        ret = orig ^ data;
+        break;
+    case PARAMS_AMO_OR:
+        ret = orig | data;
+        break;
+    case PARAMS_AMO_AND:
+        ret = orig & data;
+        break;
+    case PARAMS_AMO_SWAP:
+        ret = data;
+        break;
+
+    case PARAMS_NONE:
+        ret = data;
+        break;
+    case PARAMS_LAST:
+        break;
+    }
+
+    return ret;
+}
+
+static uint64_t
+ram_write(void *dev, uint64_t addr, uint64_t data, size_t size,
+          params_t params)
+{
+    uint64_t ret = 0;
     uint8_t *ptr = _ram_ptr(dev, addr);
 
     switch (size)
     {
     case 8:
-        *((uint64_t *)ptr) = data;
+        ret = *((uint64_t *)ptr);
+        *((uint64_t *)ptr) = _amo64(ret, data, params);
         break;
     case 4:
-        *((uint32_t *)ptr) = (uint32_t)data;
+        ret = *((uint32_t *)ptr);
+        *((uint32_t *)ptr) = _amo32((uint32_t)ret, (uint32_t)data, params);
         break;
     case 2:
+        ret = *((uint16_t *)ptr);
         *((uint16_t *)ptr) = (uint16_t)data;
         break;
     case 1:
+        ret = *((uint8_t *)ptr);
         *((uint8_t *)ptr) = (uint8_t)data;
         break;
     default:
         panic("%s: bad size %d\n", __func__, size);
     }
+
+    return ret;
 }
 
 device_t *

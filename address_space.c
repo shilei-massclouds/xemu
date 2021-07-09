@@ -8,16 +8,18 @@
 #include "util.h"
 
 static uint64_t
-read_dummy(void *dev, uint64_t addr, size_t size)
+read_dummy(void *dev, uint64_t addr, size_t size, params_t params)
 {
     panic("%s: bad addr(0x%llx)!\n", __func__, addr);
     return 0;
 }
 
-static void
-write_dummy(void *dev, uint64_t addr, uint64_t data, size_t size)
+static uint64_t
+write_dummy(void *dev, uint64_t addr, uint64_t data, size_t size,
+            params_t params)
 {
     panic("%s: bad addr(0x%llx)\n", __func__, addr);
+    return 0;
 }
 
 void
@@ -45,129 +47,125 @@ register_address_space(address_space *parent, address_space *child)
 }
 
 uint64_t
-read64(address_space *as, uint64_t addr)
+read64(address_space *as, uint64_t addr, params_t params)
 {
     address_space *child = as->children;
 
     while (child) {
         if (addr >= child->start && addr <= child->end)
-            return read64(child, addr - child->start);
+            return read64(child, addr - child->start, params);
 
         child = child->sibling;
     }
 
-    return as->ops.read_op(as->device, addr, 8);
+    return as->ops.read_op(as->device, addr, 8, params);
 }
 
-void
-write64(address_space *as, uint64_t addr, uint64_t data)
+uint64_t
+write64(address_space *as, uint64_t addr, uint64_t data, params_t params)
 {
     address_space *child = as->children;
 
     while (child) {
         if (addr >= child->start && addr <= child->end) {
-            write64(child, addr - child->start, data);
-            return;
+            return write64(child, addr - child->start, data, params);
         }
 
         child = child->sibling;
     }
 
-    as->ops.write_op(as->device, addr, data, 8);
+    return as->ops.write_op(as->device, addr, data, 8, params);
 }
 
 uint32_t
-read32(address_space *as, uint64_t addr)
+read32(address_space *as, uint64_t addr, params_t params)
 {
     address_space *child = as->children;
 
     while (child) {
         if (addr >= child->start && addr <= child->end)
-            return read32(child, addr - child->start);
+            return read32(child, addr - child->start, params);
 
         child = child->sibling;
     }
 
-    return as->ops.read_op(as->device, addr, 4);
+    return as->ops.read_op(as->device, addr, 4, params);
 }
 
-void
-write32(address_space *as, uint64_t addr, uint32_t data)
+uint32_t
+write32(address_space *as, uint64_t addr, uint32_t data, params_t params)
 {
     address_space *child = as->children;
 
     while (child) {
         if (addr >= child->start && addr <= child->end) {
-            write32(child, addr - child->start, data);
-            return;
+            return write32(child, addr - child->start, data, params);
         }
 
         child = child->sibling;
     }
 
-    as->ops.write_op(as->device, addr, data, 4);
+    return as->ops.write_op(as->device, addr, data, 4, params);
 }
 
 uint16_t
-read16(address_space *as, uint64_t addr)
+read16(address_space *as, uint64_t addr, params_t params)
 {
     address_space *child = as->children;
 
     while (child) {
         if (addr >= child->start && addr <= child->end)
-            return read16(child, addr - child->start);
+            return read16(child, addr - child->start, params);
 
         child = child->sibling;
     }
 
-    return as->ops.read_op(as->device, addr, 2);
+    return as->ops.read_op(as->device, addr, 2, params);
 }
 
-void
-write16(address_space *as, uint64_t addr, uint16_t data)
+uint16_t
+write16(address_space *as, uint64_t addr, uint16_t data, params_t params)
 {
     address_space *child = as->children;
 
     while (child) {
         if (addr >= child->start && addr <= child->end) {
-            write16(child, addr - child->start, data);
-            return;
+            return write16(child, addr - child->start, data, params);
         }
 
         child = child->sibling;
     }
 
-    as->ops.write_op(as->device, addr, data, 2);
+    return as->ops.write_op(as->device, addr, data, 2, params);
 }
 
 uint8_t
-read8(address_space *as, uint64_t addr)
+read8(address_space *as, uint64_t addr, params_t params)
 {
     address_space *child = as->children;
 
     while (child) {
         if (addr >= child->start && addr <= child->end)
-            return read8(child, addr - child->start);
+            return read8(child, addr - child->start, params);
 
         child = child->sibling;
     }
 
-    return as->ops.read_op(as->device, addr, 1);
+    return as->ops.read_op(as->device, addr, 1, params);
 }
 
-void
-write8(address_space *as, uint64_t addr, uint8_t data)
+uint8_t
+write8(address_space *as, uint64_t addr, uint8_t data, params_t params)
 {
     address_space *child = as->children;
 
     while (child) {
         if (addr >= child->start && addr <= child->end) {
-            write8(child, addr - child->start, data);
-            return;
+            return write8(child, addr - child->start, data, params);
         }
 
         child = child->sibling;
     }
 
-    as->ops.write_op(as->device, addr, data, 1);
+    return as->ops.write_op(as->device, addr, data, 1, params);
 }

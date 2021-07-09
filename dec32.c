@@ -387,37 +387,37 @@ dec32(uint32_t  inst,
         switch (funct5)
         {
         case 0:
-            *op = (funct3 == 3) ? AMO_ADD : AMO_ADDW;
+            *op = (funct3 == 3) ? AMO_ADD_D : AMO_ADD_W;
             break;
         case 1:
-            *op = (funct3 == 3) ? AMO_SWAP : AMO_SWAPW;
+            *op = (funct3 == 3) ? AMO_SWAP_D : AMO_SWAP_W;
             break;
         case 2:
-            *op = (funct3 == 3) ? LR : LRW;
+            *op = (funct3 == 3) ? LR_D : LR_W;
             break;
         case 3:
-            *op = (funct3 == 3) ? SC : SCW;
+            *op = (funct3 == 3) ? SC_D : SC_W;
             break;
         case 4:
-            *op = (funct3 == 3) ? AMO_XOR : AMO_XORW;
+            *op = (funct3 == 3) ? AMO_XOR_D : AMO_XOR_W;
             break;
         case 8:
-            *op = (funct3 == 3) ? AMO_OR : AMO_ORW;
+            *op = (funct3 == 3) ? AMO_OR_D : AMO_OR_W;
             break;
         case 12:
-            *op = (funct3 == 3) ? AMO_AND : AMO_ANDW;
+            *op = (funct3 == 3) ? AMO_AND_D : AMO_AND_W;
             break;
         case 16:
-            *op = (funct3 == 3) ? AMO_MIN : AMO_MINW;
+            *op = (funct3 == 3) ? AMO_MIN_D : AMO_MIN_W;
             break;
         case 20:
-            *op = (funct3 == 3) ? AMO_MAX : AMO_MAXW;
+            *op = (funct3 == 3) ? AMO_MAX_D : AMO_MAX_W;
             break;
         case 24:
-            *op = (funct3 == 3) ? AMO_MINU : AMO_MINUW;
+            *op = (funct3 == 3) ? AMO_MINU_D : AMO_MINU_W;
             break;
         case 28:
-            *op = (funct3 == 3) ? AMO_MAXU : AMO_MAXUW;
+            *op = (funct3 == 3) ? AMO_MAXU_D : AMO_MAXU_W;
             break;
         default:
             panic("%s: bad system instruction (0x%x)", __func__, inst);

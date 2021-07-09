@@ -30,24 +30,4 @@
 #define ALU_WIDTH   (`XLEN + 1)
 #define ALU_MSB     `XLEN
 
-#define TL_PUT_F            0x0
-#define TL_PUT_P            0x1
-#define TL_ARITH_DATA       0x2
-#define TL_LOGIC_DATA       0x3
-#define TL_GET              0x4
-
-#define TL_ACCESS_ACK       0x0
-#define TL_ACCESS_ACK_DATA  0x1
-
-#define TL_PARAM_MIN    0x0
-#define TL_PARAM_MAX    0x1
-#define TL_PARAM_MINU   0x2
-#define TL_PARAM_MAXU   0x3
-#define TL_PARAM_ADD    0x4
-
-#define TL_PARAM_XOR    0x0
-#define TL_PARAM_OR     0x1
-#define TL_PARAM_AND    0x2
-#define TL_PARAM_SWAP   0x3
-
 #endif  /* _ISA_H */

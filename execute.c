@@ -38,57 +38,57 @@ execute(address_space *as,
 
     case LB:
         addr = reg[rs1] + imm;
-        reg[rd] = (int8_t)read8(as, addr);
+        reg[rd] = (int8_t)read8(as, addr, 0);
         break;
 
     case LH:
         addr = reg[rs1] + imm;
-        reg[rd] = (int16_t)read16(as, addr);
+        reg[rd] = (int16_t)read16(as, addr, 0);
         break;
 
     case LW:
         addr = reg[rs1] + imm;
-        reg[rd] = (int32_t)read32(as, addr);
+        reg[rd] = (int32_t)read32(as, addr, 0);
         break;
 
     case LD:
         addr = reg[rs1] + imm;
-        reg[rd] = read64(as, addr);
+        reg[rd] = read64(as, addr, 0);
         break;
 
     case LBU:
         addr = reg[rs1] + imm;
-        reg[rd] = read8(as, addr);
+        reg[rd] = read8(as, addr, 0);
         break;
 
     case LHU:
         addr = reg[rs1] + imm;
-        reg[rd] = read16(as, addr);
+        reg[rd] = read16(as, addr, 0);
         break;
 
     case LWU:
         addr = reg[rs1] + imm;
-        reg[rd] = read32(as, addr);
+        reg[rd] = read32(as, addr, 0);
         break;
 
     case SB:
         addr = reg[rs1] + imm;
-        write8(as, addr, reg[rs2]);
+        write8(as, addr, reg[rs2], 0);
         break;
 
     case SH:
         addr = reg[rs1] + imm;
-        write16(as, addr, reg[rs2]);
+        write16(as, addr, reg[rs2], 0);
         break;
 
     case SW:
         addr = reg[rs1] + imm;
-        write32(as, addr, reg[rs2]);
+        write32(as, addr, reg[rs2], 0);
         break;
 
     case SD:
         addr = reg[rs1] + imm;
-        write64(as, addr, reg[rs2]);
+        write64(as, addr, reg[rs2], 0);
         break;
 
     case ADDI:
@@ -162,6 +162,74 @@ execute(address_space *as,
     case CSRRCI:
         reg[rd] = csr[csr_addr];
         csr[csr_addr] = csr[csr_addr] & ~imm;
+        break;
+
+    case LR_D:
+        reg[rd] = read64(as, reg[rs1], PARAMS_LR_SC);
+        break;
+    case SC_D:
+        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_LR_SC);
+        break;
+    case AMO_ADD_D:
+        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_ADD);
+        break;
+    case AMO_SWAP_D:
+        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_SWAP);
+        break;
+    case AMO_XOR_D:
+        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_XOR);
+        break;
+    case AMO_OR_D:
+        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_OR);
+        break;
+    case AMO_AND_D:
+        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_AND);
+        break;
+    case AMO_MIN_D:
+        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_MIN);
+        break;
+    case AMO_MAX_D:
+        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_MAX);
+        break;
+    case AMO_MINU_D:
+        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_MINU);
+        break;
+    case AMO_MAXU_D:
+        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_MAXU);
+        break;
+
+    case LR_W:
+        reg[rd] = (int32_t)read32(as, reg[rs1], PARAMS_LR_SC);
+        break;
+    case SC_W:
+        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_LR_SC);
+        break;
+    case AMO_ADD_W:
+        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_ADD);
+        break;
+    case AMO_SWAP_W:
+        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_SWAP);
+        break;
+    case AMO_XOR_W:
+        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_XOR);
+        break;
+    case AMO_OR_W:
+        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_OR);
+        break;
+    case AMO_AND_W:
+        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_AND);
+        break;
+    case AMO_MIN_W:
+        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_MIN);
+        break;
+    case AMO_MAX_W:
+        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_MAX);
+        break;
+    case AMO_MINU_W:
+        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_MINU);
+        break;
+    case AMO_MAXU_W:
+        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_MAXU);
         break;
 
     default:

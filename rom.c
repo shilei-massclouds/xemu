@@ -36,7 +36,7 @@ _rom_ptr(void *dev, uint64_t addr, size_t size)
 }
 
 static uint64_t
-rom_read(void *dev, uint64_t addr, size_t size)
+rom_read(void *dev, uint64_t addr, size_t size, params_t params)
 {
     uint8_t *ptr = _rom_ptr(dev, addr, size);
 

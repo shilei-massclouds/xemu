@@ -86,7 +86,7 @@ main()
         uint64_t  imm;
         uint32_t  csr_addr;
 
-        inst = read32(&root_as, pc);
+        inst = read32(&root_as, pc, 0);
         printf("[0x%lx]: \n", pc);
 
         next_pc = pc + decode(inst, &op, &rd, &rs1, &rs2, &imm, &csr_addr);
