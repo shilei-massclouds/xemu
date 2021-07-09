@@ -21,6 +21,7 @@ execute(address_space *as,
 {
     uint64_t addr;
     uint64_t new_pc = 0;
+    uint64_t rd_val;
 
     switch (op)
     {
@@ -28,11 +29,15 @@ execute(address_space *as,
         break;
 
     case LUI:
-        reg[rd] = imm;
+        rd_val = imm;
+        break;
+
+    case AUIPC:
+        rd_val = pc + imm;
         break;
 
     case JAL:
-        reg[rd] = next_pc;
+        rd_val = next_pc;
         new_pc = pc + imm;
         break;
 
@@ -68,37 +73,37 @@ execute(address_space *as,
 
     case LB:
         addr = reg[rs1] + imm;
-        reg[rd] = (int8_t)read8(as, addr, 0);
+        rd_val = (int8_t)read8(as, addr, 0);
         break;
 
     case LH:
         addr = reg[rs1] + imm;
-        reg[rd] = (int16_t)read16(as, addr, 0);
+        rd_val = (int16_t)read16(as, addr, 0);
         break;
 
     case LW:
         addr = reg[rs1] + imm;
-        reg[rd] = (int32_t)read32(as, addr, 0);
+        rd_val = (int32_t)read32(as, addr, 0);
         break;
 
     case LD:
         addr = reg[rs1] + imm;
-        reg[rd] = read64(as, addr, 0);
+        rd_val = read64(as, addr, 0);
         break;
 
     case LBU:
         addr = reg[rs1] + imm;
-        reg[rd] = read8(as, addr, 0);
+        rd_val = read8(as, addr, 0);
         break;
 
     case LHU:
         addr = reg[rs1] + imm;
-        reg[rd] = read16(as, addr, 0);
+        rd_val = read16(as, addr, 0);
         break;
 
     case LWU:
         addr = reg[rs1] + imm;
-        reg[rd] = read32(as, addr, 0);
+        rd_val = read32(as, addr, 0);
         break;
 
     case SB:
@@ -122,149 +127,158 @@ execute(address_space *as,
         break;
 
     case ADDI:
-        reg[rd] = reg[rs1] + imm;
+        rd_val = reg[rs1] + imm;
         break;
 
     case ADDIW:
-        reg[rd] = TO_WORD(reg[rs1] + imm);
+        rd_val = TO_WORD(reg[rs1] + imm);
         break;
 
     case ADD:
-        reg[rd] = reg[rs1] + reg[rs2];
+        rd_val = reg[rs1] + reg[rs2];
         break;
 
     case ADDW:
-        reg[rd] = TO_WORD(reg[rs1] + reg[rs2]);
+        rd_val = TO_WORD(reg[rs1] + reg[rs2]);
         break;
 
     case SLLI:
-        reg[rd] = reg[rs1] << BITS(imm, 5, 0);
+        rd_val = reg[rs1] << BITS(imm, 5, 0);
         break;
 
     case SLLIW:
-        reg[rd] = TO_WORD(reg[rs1] << BITS(imm, 4, 0));
+        rd_val = TO_WORD(reg[rs1] << BITS(imm, 4, 0));
         break;
 
     case SRLI:
-        reg[rd] = reg[rs1] >> BITS(imm, 5, 0);
+        rd_val = reg[rs1] >> BITS(imm, 5, 0);
         break;
 
     case SRLIW:
-        reg[rd] = TO_WORD(reg[rs1] >> BITS(imm, 4, 0));
+        rd_val = TO_WORD(reg[rs1] >> BITS(imm, 4, 0));
         break;
 
     case SRAI:
-        reg[rd] = ((int64_t)reg[rs1]) >> BITS(imm, 5, 0);
+        rd_val = ((int64_t)reg[rs1]) >> BITS(imm, 5, 0);
         break;
 
     case SRAIW:
-        reg[rd] = TO_WORD(((int64_t)reg[rs1]) >> BITS(imm, 5, 0));
+        rd_val = TO_WORD(((int64_t)reg[rs1]) >> BITS(imm, 5, 0));
+        break;
+
+    case FENCE:
+        break;
+
+    case FENCE_I:
         break;
 
     case WFI:
         break;
 
     case CSRRW:
-        reg[rd] = csr[csr_addr];
+        rd_val = csr[csr_addr];
         csr[csr_addr] = reg[rs1];
         break;
 
     case CSRRS:
-        reg[rd] = csr[csr_addr];
+        rd_val = csr[csr_addr];
         csr[csr_addr] = csr[csr_addr] | reg[rs1];
         break;
 
     case CSRRC:
-        reg[rd] = csr[csr_addr];
+        rd_val = csr[csr_addr];
         csr[csr_addr] = csr[csr_addr] & ~reg[rs1];
         break;
 
     case CSRRWI:
-        reg[rd] = csr[csr_addr];
+        rd_val = csr[csr_addr];
         csr[csr_addr] = imm;
         break;
 
     case CSRRSI:
-        reg[rd] = csr[csr_addr];
+        rd_val = csr[csr_addr];
         csr[csr_addr] = csr[csr_addr] | imm;
         break;
 
     case CSRRCI:
-        reg[rd] = csr[csr_addr];
+        rd_val = csr[csr_addr];
         csr[csr_addr] = csr[csr_addr] & ~imm;
         break;
 
     case LR_D:
-        reg[rd] = read64(as, reg[rs1], PARAMS_LR_SC);
+        rd_val = read64(as, reg[rs1], PARAMS_LR_SC);
         break;
     case SC_D:
-        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_LR_SC);
+        rd_val = write64(as, reg[rs1], reg[rs2], PARAMS_LR_SC);
         break;
     case AMO_ADD_D:
-        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_ADD);
+        rd_val = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_ADD);
         break;
     case AMO_SWAP_D:
-        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_SWAP);
+        rd_val = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_SWAP);
         break;
     case AMO_XOR_D:
-        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_XOR);
+        rd_val = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_XOR);
         break;
     case AMO_OR_D:
-        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_OR);
+        rd_val = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_OR);
         break;
     case AMO_AND_D:
-        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_AND);
+        rd_val = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_AND);
         break;
     case AMO_MIN_D:
-        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_MIN);
+        rd_val = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_MIN);
         break;
     case AMO_MAX_D:
-        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_MAX);
+        rd_val = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_MAX);
         break;
     case AMO_MINU_D:
-        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_MINU);
+        rd_val = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_MINU);
         break;
     case AMO_MAXU_D:
-        reg[rd] = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_MAXU);
+        rd_val = write64(as, reg[rs1], reg[rs2], PARAMS_AMO_MAXU);
         break;
 
     case LR_W:
-        reg[rd] = (int32_t)read32(as, reg[rs1], PARAMS_LR_SC);
+        rd_val = (int32_t)read32(as, reg[rs1], PARAMS_LR_SC);
         break;
     case SC_W:
-        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_LR_SC);
+        rd_val = write32(as, reg[rs1], reg[rs2], PARAMS_LR_SC);
         break;
     case AMO_ADD_W:
-        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_ADD);
+        rd_val = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_ADD);
         break;
     case AMO_SWAP_W:
-        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_SWAP);
+        rd_val = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_SWAP);
         break;
     case AMO_XOR_W:
-        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_XOR);
+        rd_val = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_XOR);
         break;
     case AMO_OR_W:
-        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_OR);
+        rd_val = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_OR);
         break;
     case AMO_AND_W:
-        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_AND);
+        rd_val = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_AND);
         break;
     case AMO_MIN_W:
-        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_MIN);
+        rd_val = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_MIN);
         break;
     case AMO_MAX_W:
-        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_MAX);
+        rd_val = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_MAX);
         break;
     case AMO_MINU_W:
-        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_MINU);
+        rd_val = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_MINU);
         break;
     case AMO_MAXU_W:
-        reg[rd] = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_MAXU);
+        rd_val = write32(as, reg[rs1], reg[rs2], PARAMS_AMO_MAXU);
         break;
 
     default:
         panic("%s: bad op (%s)\n", __func__, op_name(op));
     }
+
+    if (rd)
+        reg[rd] = rd_val;
 
     return new_pc;
 }

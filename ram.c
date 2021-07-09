@@ -74,7 +74,7 @@ _amo32(uint32_t orig, uint32_t data, params_t params)
     switch (params)
     {
     case PARAMS_LR_SC:
-        ret = 0;
+        ret = data;
         break;
     case PARAMS_AMO_MIN:
         if ((int32_t)data < (int32_t)orig)
@@ -126,7 +126,7 @@ _amo64(uint64_t orig, uint64_t data, params_t params)
     switch (params)
     {
     case PARAMS_LR_SC:
-        ret = 0;
+        ret = data;
         break;
     case PARAMS_AMO_MIN:
         if ((int64_t)data < (int64_t)orig)
@@ -180,11 +180,11 @@ ram_write(void *dev, uint64_t addr, uint64_t data, size_t size,
     switch (size)
     {
     case 8:
-        ret = *((uint64_t *)ptr);
+        ret = (params == PARAMS_LR_SC) ? 0: *((uint64_t *)ptr);
         *((uint64_t *)ptr) = _amo64(ret, data, params);
         break;
     case 4:
-        ret = *((uint32_t *)ptr);
+        ret = (params == PARAMS_LR_SC) ? 0: *((uint32_t *)ptr);
         *((uint32_t *)ptr) = _amo32((uint32_t)ret, (uint32_t)data, params);
         break;
     case 2:
