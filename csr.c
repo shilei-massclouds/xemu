@@ -25,6 +25,8 @@ csr_name(uint32_t csr_addr)
         return "satp";
     case MTVEC:
         return "mtvec";
+    case MSCRATCH:
+        return "mscratch";
     case MVENDORID:
         return "mvendorid";
     case MARCHID:

@@ -42,6 +42,11 @@ execute(address_space *as,
         new_pc = pc + imm;
         break;
 
+    case JALR:
+        rd_val = next_pc;
+        new_pc = reg[rs1] + imm;
+        break;
+
     case BEQ:
         if (reg[rs1] == reg[rs2])
             new_pc = pc + imm;
@@ -145,6 +150,10 @@ execute(address_space *as,
 
     case SUB:
         rd_val = reg[rs1] - reg[rs2];
+        break;
+
+    case SUBW:
+        rd_val = TO_WORD(reg[rs1] - reg[rs2]);
         break;
 
     case SLLI:

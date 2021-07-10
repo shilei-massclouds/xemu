@@ -102,6 +102,7 @@ dec32(uint32_t  inst,
         }
 
         *imm = B_IMM(inst);
+        *rd = 0;
         break;
 
     case OP_LOAD:
@@ -155,6 +156,7 @@ dec32(uint32_t  inst,
         }
 
         *imm = S_IMM(inst);
+        *rd = 0;
         break;
 
     case OP_IMM:
