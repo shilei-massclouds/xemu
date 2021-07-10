@@ -17,7 +17,7 @@ device_t *
 rom_init(address_space *parent_as);
 
 void
-rom_add_file(device_t *dev, const char *filename);
+rom_add_file(device_t *dev, const char *filename, size_t base);
 
 device_t *
 ram_init(address_space *parent_as);

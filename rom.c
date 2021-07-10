@@ -81,7 +81,7 @@ rom_init(address_space *parent_as)
 }
 
 void
-rom_add_file(device_t *dev, const char *filename)
+rom_add_file(device_t *dev, const char *filename, size_t base)
 {
     uint8_t *ptr;
     size_t size;
@@ -92,7 +92,10 @@ rom_add_file(device_t *dev, const char *filename)
     if (fp == NULL || fstat(fileno(fp), &info) < 0)
         panic("%s: bad filename %s\n", __func__, filename);
 
-    size = ROUND_UP((rom->mem_size + info.st_size), 4);
+    if (base < rom->mem_size)
+        panic("%s: bad base %x\n", __func__, base);
+
+    size = ROUND_UP((base + info.st_size), 8);
 
     ptr = calloc(1, size);
     if (ptr == NULL)
@@ -104,7 +107,7 @@ rom_add_file(device_t *dev, const char *filename)
         rom->mem_ptr = NULL;
     }
 
-    if (fread(ptr + rom->mem_size, 1, info.st_size, fp) != info.st_size)
+    if (fread(ptr + base, 1, info.st_size, fp) != info.st_size)
         panic("%s: read file failed!\n", __func__);
 
     rom->mem_size = size;
@@ -113,4 +116,9 @@ rom_add_file(device_t *dev, const char *filename)
     fclose(fp);
 
     fprintf(stderr, "%s: add file %s\n", __func__, filename);
+
+    /* Recode file-size into (base - 8) */
+    if (base) {
+        *((uint64_t *)(ptr + base - 8)) = info.st_size;
+    }
 }

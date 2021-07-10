@@ -76,7 +76,10 @@ main()
     root_as.mmu = mmu;
 
     rom = rom_init(&root_as);
-    rom_add_file(rom, "image/head.bin");
+    rom_add_file(rom, "image/head.bin", 0);
+    rom_add_file(rom, "image/virt.dtb", 0x100);
+    rom_add_file(rom, "image/fw_jump.bin", 0x2000);
+    rom_add_file(rom, "image/payload.bin", 0x20000);
 
     ram_init(&root_as);
 
