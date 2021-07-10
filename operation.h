@@ -74,8 +74,11 @@ typedef enum _op_t
 
     ECALL,
     EBREAK,
-    XRET,
+    URET,
+    SRET,
+    MRET,
     WFI,
+    SFENCE_VMA,
 
     CSRRW,
     CSRRS,

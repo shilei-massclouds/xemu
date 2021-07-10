@@ -45,6 +45,8 @@ typedef struct _address_space
 
     void *device;
 
+    uint64_t (*mmu)(uint64_t vaddr, int *except);
+
     struct _address_space *children;
     struct _address_space *sibling;
 
@@ -54,20 +56,10 @@ void init_address_space(address_space *as, uint64_t start, uint64_t end);
 
 void register_address_space(address_space *parent, address_space *child);
 
-uint8_t read8(address_space *as, uint64_t addr, params_t params);
-uint8_t write8(address_space *as, uint64_t addr, uint8_t data,
-               params_t params);
+uint64_t read(address_space *as, uint64_t vaddr, size_t size,
+              params_t params, int *except);
 
-uint16_t read16(address_space *as, uint64_t addr, params_t params);
-uint16_t write16(address_space *as, uint64_t addr, uint16_t data,
-                 params_t params);
-
-uint32_t read32(address_space *as, uint64_t addr, params_t params);
-uint32_t write32(address_space *as, uint64_t addr, uint32_t data,
-                 params_t params);
-
-uint64_t read64(address_space *as, uint64_t addr, params_t params);
-uint64_t write64(address_space *as, uint64_t addr, uint64_t data,
-                 params_t params);
+uint64_t write(address_space *as, uint64_t vaddr, size_t size, uint64_t data,
+               params_t params, int *except);
 
 #endif /* ADDRESS_SAPCE_H */

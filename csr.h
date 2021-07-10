@@ -93,6 +93,36 @@
 #define MISA_INIT_VAL \
     (MISA_MXL_64 | MISA_U | MISA_S | MISA_M | MISA_I | MISA_C | MISA_A)
 
+/* [M|S]STATUS bits */
+#define MS_UIE      0
+#define MS_SIE      1
+#define MS_MIE      3
+#define MS_UPIE     4
+#define MS_SPIE     5
+#define MS_MPIE     7
+#define MS_SPP      8
+
+#define CAUSE_S_SOFTWARE_INTR  0x8000000000000001
+#define CAUSE_M_SOFTWARE_INTR  0x8000000000000003
+#define CAUSE_S_TIMER_INTR     0x8000000000000005
+#define CAUSE_M_TIMER_INTR     0x8000000000000007
+#define CAUSE_S_EXTERNAL_INTR  0x8000000000000009
+#define CAUSE_M_EXTERNAL_INTR  0x800000000000000b
+
+#define CAUSE_INST_ADDR_MISALIGNED  0x0
+#define CAUSE_INST_ACCESS_FAULT     0x1
+#define CAUSE_ILLEGAL_INST          0x2
+#define CAUSE_BREAK_POINT           0x3
+#define CAUSE_LOAD_ADDR_MISALIGNED  0x4
+#define CAUSE_LOAD_ACCESS_FAULT     0x5
+#define CAUSE_STORE_ADDR_MISALIGNED 0x6
+#define CAUSE_STORE_ACCESS_FAULT    0x7
+#define CAUSE_ECALL_FROM_U_MODE     0x8
+#define CAUSE_ECALL_FROM_S_MODE     0x9
+#define CAUSE_ECALL_FROM_M_MODE     0xb
+#define CAUSE_INST_PAGE_FAULT       0xc
+#define CAUSE_LOAD_PAGE_FAULT       0xd
+#define CAUSE_STORE_PAGE_FAULT      0xf
 
 /* CSR Number */
 #define USTATUS     0x000
@@ -150,6 +180,11 @@
 #define MIMPID      0xf13
 #define MHARTID     0xf14
 
+#define U_MODE  0
+#define S_MODE  1
+#define M_MODE  3
+
+extern uint8_t  priv;
 extern uint64_t csr[4096];
 
 void

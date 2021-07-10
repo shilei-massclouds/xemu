@@ -22,6 +22,15 @@
 #define TO_WORD(n) \
     ((EXPAND_BIT((n), 31, 32) << 32) | BITS((n), 31, 0))
 
+#define _BITS_MASK(high, low) \
+    (((1UL << ((high) - (low) + 1UL)) - 1UL) << (low))
+
+#define SET_BITS(dest, high, low, bits) \
+    (dest = (((dest) & ~_BITS_MASK((high), (low))) | ((bits) << (low))))
+
+#define SET_BIT(dest, index, bit) \
+    (dest = (((dest) & ~(1UL << (index))) | (bit << (index))))
+
 void panic(const char *msg, ...);
 
 #endif /* UTIL_H */

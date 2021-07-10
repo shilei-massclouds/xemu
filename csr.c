@@ -5,6 +5,7 @@
 #include "csr.h"
 #include "util.h"
 
+uint8_t priv = M_MODE;
 uint64_t csr[4096] = {0};
 
 void
@@ -20,13 +21,17 @@ csr_name(uint32_t csr_addr)
     {
     case USTATUS:
         return "ustatus";
-    case 0xF11:
+    case SATP:
+        return "satp";
+    case MTVEC:
+        return "mtvec";
+    case MVENDORID:
         return "mvendorid";
-    case 0xF12:
+    case MARCHID:
         return "marchid";
-    case 0xF13:
+    case MIMPID:
         return "mimpid";
-    case 0xF14:
+    case MHARTID:
         return "mhartid";
     default:
         panic("%s: bad csr address 0x%x\n", __func__, csr_addr);

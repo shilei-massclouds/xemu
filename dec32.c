@@ -98,7 +98,7 @@ dec32(uint32_t  inst,
             *op = BGEU;
             break;
         default:
-            panic("%s: bad branch instruction (0x%x)", __func__, inst);
+            panic("%s: bad branch instruction (0x%x)\n", __func__, inst);
         }
 
         *imm = B_IMM(inst);
@@ -129,7 +129,7 @@ dec32(uint32_t  inst,
             *op = LWU;
             break;
         default:
-            panic("%s: bad load instruction (0x%x)", __func__, inst);
+            panic("%s: bad load instruction (0x%x)\n", __func__, inst);
         }
 
         *imm = I_IMM(inst);
@@ -151,7 +151,7 @@ dec32(uint32_t  inst,
             *op = SD;
             break;
         default:
-            panic("%s: bad store instruction (0x%x)", __func__, inst);
+            panic("%s: bad store instruction (0x%x)\n", __func__, inst);
         }
 
         *imm = S_IMM(inst);
@@ -185,7 +185,7 @@ dec32(uint32_t  inst,
             *op = ANDI;
             break;
         default:
-            panic("%s: bad imm instruction (0x%x)", __func__, inst);
+            panic("%s: bad imm instruction (0x%x)\n", __func__, inst);
         }
 
         *imm = (funct3 == 1 || funct3 == 5) ? M_IMM6(inst) : I_IMM(inst);
@@ -207,7 +207,7 @@ dec32(uint32_t  inst,
             *imm = M_IMM5(inst);
             break;
         default:
-            panic("%s: bad imm_w instruction (0x%x)", __func__, inst);
+            panic("%s: bad imm_w instruction (0x%x)\n", __func__, inst);
         }
 
         break;
@@ -241,7 +241,7 @@ dec32(uint32_t  inst,
                 *op = REMU;
                 break;
             default:
-                panic("%s: bad mul/div instruction (0x%x)", __func__, inst);
+                panic("%s: bad mul/div instruction (0x%x)\n", __func__, inst);
             }
         } else {
             switch (funct3)
@@ -271,7 +271,7 @@ dec32(uint32_t  inst,
                 *op = AND;
                 break;
             default:
-                panic("%s: bad reg instruction (0x%x)", __func__, inst);
+                panic("%s: bad reg instruction (0x%x)\n", __func__, inst);
             }
         }
 
@@ -297,7 +297,7 @@ dec32(uint32_t  inst,
                 *op = REMUW;
                 break;
             default:
-                panic("%s: bad mul(w)/div(w) instruction (0x%x)", __func__, inst);
+                panic("%s: bad mul(w)/div(w) instruction (0x%x)\n", __func__, inst);
             }
         } else {
             switch (funct3)
@@ -337,23 +337,42 @@ dec32(uint32_t  inst,
         switch (funct3)
         {
         case 0:
-            switch (BITS(inst, 24, 20))
+            switch (funct7)
             {
             case 0:
-                *op = ECALL;
+                switch (BITS(inst, 24, 20))
+                {
+                case 0:
+                    *op = ECALL;
+                    break;
+                case 1:
+                    *op = EBREAK;
+                    break;
+                case 2:
+                    *op = URET;
+                    break;
+                default:
+                    panic("%s: bad system instruction (0x%x)", __func__, inst);
+                }
                 break;
-            case 1:
-                *op = EBREAK;
+            case 8:
+                if (BITS(inst, 24, 20) == 2)
+                    *op = SRET;
+                else if (BITS(inst, 24, 20) == 5)
+                    *op = WFI;
+                else
+                    panic("%s: bad system instruction (0x%x)", __func__, inst);
                 break;
-            case 2:
-                *op = XRET;
+            case 9:
+                *op = SFENCE_VMA;
                 break;
-            case 5:
-                *op = WFI;
+            case 24:
+                *op = MRET;
                 break;
             default:
                 panic("%s: bad system instruction (0x%x)", __func__, inst);
             }
+
             break;
         case 1:
             *op = CSRRW;

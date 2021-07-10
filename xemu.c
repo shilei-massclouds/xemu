@@ -13,6 +13,8 @@
 #include "execute.h"
 #include "csr.h"
 #include "regfile.h"
+#include "mmu.h"
+#include "trap.h"
 
 /*
 static void
@@ -70,6 +72,9 @@ main()
                        ROOT_ADDRESS_SPACE_START,
                        ROOT_ADDRESS_SPACE_END);
 
+    /* Root mmu */
+    root_as.mmu = mmu;
+
     rom = rom_init(&root_as);
     rom_add_file(rom, "image/head.bin");
 
@@ -87,14 +92,22 @@ main()
         uint32_t  rs2;
         uint64_t  imm;
         uint32_t  csr_addr;
+        int except = 0;
 
-        inst = read32(&root_as, pc, 0);
+        /* Fetch */
+        inst = read(&root_as, pc, 4, 0, &except);
         fprintf(stderr, "[0x%lx]: \n", pc);
+        if (except) {
+            pc = trap_enter(pc, CAUSE_INST_PAGE_FAULT, pc);
+            continue;
+        }
 
+        /* Decode */
         next_pc = pc + decode(inst, &op, &rd, &rs1, &rs2, &imm, &csr_addr);
 
         //trace_decode(op, rd, rs1, rs2, imm, csr_addr);
 
+        /* Execute */
         new_pc = execute(&root_as, pc, next_pc,
                          op, rd, rs1, rs2, imm, csr_addr);
 

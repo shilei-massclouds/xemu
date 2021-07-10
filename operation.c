@@ -25,7 +25,8 @@ const char *op_names[] = {
 
     "FENCE", "FENCE_I",
 
-    "ECALL", "EBREAK", "XRET", "WFI",
+    "ECALL", "EBREAK", "URET", "SRET", "MRET",
+    "WFI", "SFENCE_VMA",
 
     "CSRRW", "CSRRS", "CSRRC",
     "CSRRWI", "CSRRSI", "CSRRCI",
