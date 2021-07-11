@@ -23,6 +23,8 @@ csr_name(uint32_t csr_addr)
         return "ustatus";
     case SATP:
         return "satp";
+    case MISA:
+        return "misa";
     case MIE:
         return "mie";
     case MTVEC:
@@ -31,6 +33,23 @@ csr_name(uint32_t csr_addr)
         return "mscratch";
     case MIP:
         return "mip";
+    case PMPADDR0:
+    case PMPADDR1:
+    case PMPADDR2:
+    case PMPADDR3:
+    case PMPADDR4:
+    case PMPADDR5:
+    case PMPADDR6:
+    case PMPADDR7:
+    case PMPADDR8:
+    case PMPADDR9:
+    case PMPADDR10:
+    case PMPADDR11:
+    case PMPADDR12:
+    case PMPADDR13:
+    case PMPADDR14:
+    case PMPADDR15:
+        return "pmpaddr";
     case MVENDORID:
         return "mvendorid";
     case MARCHID:
@@ -40,7 +59,8 @@ csr_name(uint32_t csr_addr)
     case MHARTID:
         return "mhartid";
     default:
-        panic("%s: bad csr address 0x%x\n", __func__, csr_addr);
+        return "unknown";
+        //panic("%s: bad csr address 0x%x\n", __func__, csr_addr);
     }
 
     return "";

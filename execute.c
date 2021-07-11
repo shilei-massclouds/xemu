@@ -204,6 +204,14 @@ execute(address_space *as,
         rd_val = TO_WORD(reg[rs1] >> BITS(imm, 4, 0));
         break;
 
+    case SRL:
+        rd_val = reg[rs1] << BITS(imm, 5, 0);
+        break;
+
+    case SRLW:
+        rd_val = TO_WORD(reg[rs1] << BITS(imm, 4, 0));
+        break;
+
     case SRAI:
         rd_val = ((int64_t)reg[rs1]) >> BITS(imm, 5, 0);
         break;

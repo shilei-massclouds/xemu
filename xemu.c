@@ -103,6 +103,9 @@ main()
                        ROOT_ADDRESS_SPACE_START,
                        ROOT_ADDRESS_SPACE_END);
 
+    /* Init CSR */
+    csr_init();
+
     /* Root mmu */
     root_as.mmu = mmu;
 
