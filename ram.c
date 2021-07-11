@@ -10,7 +10,9 @@
 
 #define PD_NUM  1024
 #define PT_NUM  1024
-#define PAGE_SIZE 4096
+
+#define _PFN(addr) ((addr) >> PAGE_BITS)
+#define IN_SAME_PAGE(addr, size) (_PFN(addr) == _PFN(addr + size - 1UL))
 
 #define RAM_ADDRESS_SPACE_START 0x0000000080000000
 #define RAM_ADDRESS_SPACE_END   0x00000000FFFFFFFF
@@ -49,6 +51,10 @@ static uint64_t
 ram_read(void *dev, uint64_t addr, size_t size, params_t params)
 {
     uint8_t *ptr = _ram_ptr(dev, addr);
+
+    if (!IN_SAME_PAGE(addr, size))
+        panic("%s: out of page boundary 0x%lx (0x%lx)\n",
+              __func__, addr, size);
 
     switch (size)
     {
@@ -176,6 +182,10 @@ ram_write(void *dev, uint64_t addr, uint64_t data, size_t size,
 {
     uint64_t ret = 0;
     uint8_t *ptr = _ram_ptr(dev, addr);
+
+    if (!IN_SAME_PAGE(addr, size))
+        panic("%s: out of page boundary 0x%lx (0x%lx)\n",
+              __func__, addr, size);
 
     switch (size)
     {

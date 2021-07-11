@@ -16,8 +16,9 @@
 #include "mmu.h"
 #include "trap.h"
 
-static int trace_en;
-static uint64_t trace_pc_start;
+static int trace_decode_en;
+static int trace_execute_en = 0;
+static uint64_t trace_pc_start = 0x80000000;
 
 static void
 trace_decode(uint64_t   pc,
@@ -28,7 +29,7 @@ trace_decode(uint64_t   pc,
              uint64_t   imm,
              uint32_t   csr_addr)
 {
-    if (!trace_en || pc < trace_pc_start)
+    if (!trace_decode_en || pc < trace_pc_start)
         return;
 
     fprintf(stderr, "[%lx]: %s; rd: %s; rs1: %s; rs2: %s; imm: %lx\n",
@@ -50,7 +51,7 @@ trace_execute(uint64_t   pc,
               uint64_t   imm,
               uint32_t   csr_addr)
 {
-    if (!trace_en || pc < trace_pc_start)
+    if (!trace_execute_en || pc < trace_pc_start)
         return;
 
     fprintf(stderr, "[%lx]: %s; rd: %s(0x%0lx); rs1: %s(0x%0lx); rs2: %s(0x%0lx); imm: 0x%0lx\n",
@@ -65,6 +66,26 @@ trace_execute(uint64_t   pc,
         fprintf(stderr, "csr: %s\n\n", csr_name(csr_addr));
     else
         fprintf(stderr, "\n");
+}
+
+uint32_t
+fetch(address_space *as, uint64_t pc, int *except)
+{
+    uint32_t lo;
+    uint32_t hi;
+
+    if ((pc + 2) & (PAGE_SIZE - 1UL))
+        return read(as, pc, 4, 0, except);
+
+    lo = read(as, pc, 2, 0, except);
+    if (*except)
+        return 0;
+
+    hi = read(as, pc + 2, 2, 0, except);
+    if (*except)
+        return 0;
+
+    return ((hi << 16) | lo);
 }
 
 int
@@ -108,8 +129,7 @@ main()
         int except = 0;
 
         /* Fetch */
-        inst = read(&root_as, pc, 4, 0, &except);
-        //fprintf(stderr, "[0x%lx]: \n", pc);
+        inst = fetch(&root_as, pc, &except);
 
         if (except) {
             pc = trap_enter(pc, CAUSE_INST_PAGE_FAULT, pc);

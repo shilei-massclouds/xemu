@@ -13,7 +13,7 @@ panic(const char *msg, ...)
 {
     va_list ap;
     fprintf(stderr, "\n#############################\n");
-    fprintf(stderr, "PANIC: \n");
+    fprintf(stderr, "PANIC:\n");
     va_start(ap, msg);
     vfprintf(stderr, msg, ap);
     va_end(ap);

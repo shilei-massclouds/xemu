@@ -144,8 +144,24 @@ execute(address_space *as,
         rd_val = reg[rs1] + reg[rs2];
         break;
 
+    case SLT:
+        rd_val = ((int64_t)reg[rs1] < (int64_t)reg[rs2]) ? 1 : 0;
+        break;
+
+    case SLTU:
+        rd_val = (reg[rs1] < reg[rs2]) ? 1 : 0;
+        break;
+
     case ADDW:
         rd_val = TO_WORD(reg[rs1] + reg[rs2]);
+        break;
+
+    case SLTI:
+        rd_val = ((int64_t)reg[rs1] < (int64_t)imm) ? 1 : 0;
+        break;
+
+    case SLTIU:
+        rd_val = (reg[rs1] < imm) ? 1 : 0;
         break;
 
     case SUB:
@@ -162,6 +178,14 @@ execute(address_space *as,
 
     case SLLIW:
         rd_val = TO_WORD(reg[rs1] << BITS(imm, 4, 0));
+        break;
+
+    case SLL:
+        rd_val = reg[rs1] << BITS(reg[rs2], 5, 0);
+        break;
+
+    case SLLW:
+        rd_val = TO_WORD(reg[rs1] << BITS(reg[rs2], 4, 0));
         break;
 
     case XORI:
@@ -211,7 +235,6 @@ execute(address_space *as,
         break;
 
     case WFI:
-        panic("Meet WFI. Exit...\n");
         break;
 
     case SFENCE_VMA:
@@ -245,6 +268,58 @@ execute(address_space *as,
     case CSRRCI:
         rd_val = csr[csr_addr];
         csr[csr_addr] = rd_val & ~imm;
+        break;
+
+    case MUL:
+        rd_val = (int64_t)reg[rs1] * (int64_t)reg[rs2];
+        break;
+
+    case MULH:
+        rd_val = ((__int128_t)reg[rs1] * (__int128_t)reg[rs2]) >> 64;
+        break;
+
+    case MULHSU:
+        rd_val = ((__int128_t)reg[rs1] * reg[rs2]) >> 64;
+        break;
+
+    case MULHU:
+        rd_val = ((__uint128_t)reg[rs1] *(__uint128_t) reg[rs2]) >> 64;
+        break;
+
+    case DIV:
+        rd_val = (int64_t)reg[rs1] / (int64_t)reg[rs2];
+        break;
+
+    case DIVU:
+        rd_val = reg[rs1] / reg[rs2];
+        break;
+
+    case REM:
+        rd_val = (int64_t)reg[rs1] % (int64_t)reg[rs2];
+        break;
+
+    case REMU:
+        rd_val = reg[rs1] % reg[rs2];
+        break;
+
+    case MULW:
+        rd_val = TO_WORD((int32_t)reg[rs1] * (int32_t)reg[rs2]);
+        break;
+
+    case DIVW:
+        rd_val = TO_WORD((int32_t)reg[rs1] / (int32_t)reg[rs2]);
+        break;
+
+    case DIVUW:
+        rd_val = TO_WORD((uint32_t)reg[rs1] / (uint32_t)reg[rs2]);
+        break;
+
+    case REMW:
+        rd_val = TO_WORD((int32_t)reg[rs1] % (int32_t)reg[rs2]);
+        break;
+
+    case REMUW:
+        rd_val = TO_WORD((uint32_t)reg[rs1] % (uint32_t)reg[rs2]);
         break;
 
     case LR_D:

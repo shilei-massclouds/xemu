@@ -23,10 +23,14 @@ csr_name(uint32_t csr_addr)
         return "ustatus";
     case SATP:
         return "satp";
+    case MIE:
+        return "mie";
     case MTVEC:
         return "mtvec";
     case MSCRATCH:
         return "mscratch";
+    case MIP:
+        return "mip";
     case MVENDORID:
         return "mvendorid";
     case MARCHID:
