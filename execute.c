@@ -251,6 +251,10 @@ execute(address_space *as,
     case FENCE_I:
         break;
 
+    case ECALL:
+        new_pc = trap_enter(pc, (CAUSE_ECALL_FROM_U_MODE + priv), 0);
+        break;
+
     case MRET:
         new_pc = trap_exit();
         break;
