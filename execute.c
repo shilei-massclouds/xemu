@@ -206,11 +206,11 @@ execute(address_space *as,
         break;
 
     case SRL:
-        rd_val = reg[rs1] << BITS(imm, 5, 0);
+        rd_val = reg[rs1] >> BITS(reg[rs2], 5, 0);
         break;
 
     case SRLW:
-        rd_val = TO_WORD(reg[rs1] << BITS(imm, 4, 0));
+        rd_val = TO_WORD(reg[rs1] >> BITS(reg[rs2], 4, 0));
         break;
 
     case SRAI:
@@ -218,7 +218,15 @@ execute(address_space *as,
         break;
 
     case SRAIW:
-        rd_val = TO_WORD(((int64_t)reg[rs1]) >> BITS(imm, 5, 0));
+        rd_val = (int64_t)(((int32_t)reg[rs1]) >> BITS(imm, 5, 0));
+        break;
+
+    case SRA:
+        rd_val = ((int64_t)reg[rs1]) >> BITS(reg[rs2], 5, 0);
+        break;
+
+    case SRAW:
+        rd_val = (int64_t)(((int32_t)reg[rs1]) >> BITS(reg[rs2], 5, 0));
         break;
 
     case ORI:
@@ -256,6 +264,8 @@ execute(address_space *as,
     case CSRRW:
         rd_val = csr[csr_addr];
         csr[csr_addr] = reg[rs1];
+        if (csr_addr == 0)
+            printf("#DEBUG:[%lx]: %lx\n", pc, reg[rs1]);
         break;
 
     case CSRRS:

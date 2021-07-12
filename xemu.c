@@ -18,7 +18,7 @@
 
 static int trace_decode_en;
 static int trace_execute_en = 1;
-static uint64_t trace_pc_start = 0x80200000;
+static uint64_t trace_pc_start = 0xffffffe00001b9a6;
 
 static void
 trace_decode(uint64_t   pc,
