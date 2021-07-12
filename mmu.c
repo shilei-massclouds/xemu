@@ -14,10 +14,11 @@
 
 
 uint64_t
-mmu(uint64_t vaddr, int *except)
+mmu(address_space *as, uint64_t vaddr, int *except)
 {
     uint64_t pte;
     uint64_t root_ppn;
+    uint64_t paddr;
 
     if ((priv != S_MODE) || (BITS(csr[SATP], 63, 60) == 0))
         return vaddr;
@@ -25,7 +26,8 @@ mmu(uint64_t vaddr, int *except)
     root_ppn = BITS(csr[SATP], 43, 0);
 
     /* Level-2 */
-    pte = *((uint64_t *)((root_ppn << 12) | (BITS(vaddr, 38, 30) << 3)));
+    paddr = (root_ppn << 12) | (BITS(vaddr, 38, 30) << 3);
+    pte = read_nommu(as, paddr, 8, 0);
 
     if ((PTE_V(pte) == 0) || ((PTE_R(pte) == 0) && (PTE_W(pte) == 1))) {
         /* page-fault */
@@ -39,8 +41,8 @@ mmu(uint64_t vaddr, int *except)
     }
 
     /* Level-1 */
-    pte = *((uint64_t *)((BITS(pte, 53, 10) << 12) |
-                         (BITS(vaddr, 29, 21) << 3)));
+    paddr = (BITS(pte, 53, 10) << 12) | (BITS(vaddr, 29, 21) << 3);
+    pte = read_nommu(as, paddr, 8, 0);
 
     if ((PTE_V(pte) == 0) || ((PTE_R(pte) == 0) && (PTE_W(pte) == 1))) {
         /* page-fault */
@@ -54,8 +56,8 @@ mmu(uint64_t vaddr, int *except)
     }
 
     /* Level-0 */
-    pte = *((uint64_t *)((BITS(pte, 53, 10) << 12) |
-                         (BITS(vaddr, 20, 12) << 3)));
+    paddr = (BITS(pte, 53, 10) << 12) | (BITS(vaddr, 20, 12) << 3);
+    pte = read_nommu(as, paddr, 8, 0);
 
     if ((PTE_V(pte) == 0) || ((PTE_R(pte) == 0) && (PTE_W(pte) == 1))) {
         /* page-fault */

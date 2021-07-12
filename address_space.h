@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
+
 /* Sv39 for riscv64 */
 #define ROOT_ADDRESS_SPACE_START 0x0000000000000000
 #define ROOT_ADDRESS_SPACE_END   0x0000007FFFFFFFFF
@@ -45,21 +46,31 @@ typedef struct _address_space
 
     void *device;
 
-    uint64_t (*mmu)(uint64_t vaddr, int *except);
-
     struct _address_space *children;
     struct _address_space *sibling;
 
 } address_space;
 
-void init_address_space(address_space *as, uint64_t start, uint64_t end);
+void
+init_address_space(address_space *as, uint64_t start, uint64_t end);
 
-void register_address_space(address_space *parent, address_space *child);
+void
+register_address_space(address_space *parent, address_space *child);
 
-uint64_t read(address_space *as, uint64_t vaddr, size_t size,
-              params_t params, int *except);
+uint64_t
+read_nommu(address_space *as, uint64_t addr, size_t size,
+           params_t params);
 
-uint64_t write(address_space *as, uint64_t vaddr, size_t size, uint64_t data,
-               params_t params, int *except);
+uint64_t
+write_nommu(address_space *as, uint64_t addr,
+            size_t size, uint64_t data, params_t params);
+
+uint64_t
+read(address_space *as, uint64_t vaddr, size_t size,
+     params_t params, int *except);
+
+uint64_t
+write(address_space *as, uint64_t vaddr, size_t size, uint64_t data,
+      params_t params, int *except);
 
 #endif /* ADDRESS_SAPCE_H */

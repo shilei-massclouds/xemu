@@ -7,6 +7,7 @@
 #include "regfile.h"
 #include "csr.h"
 #include "util.h"
+#include "trap.h"
 
 uint64_t
 execute(address_space *as,
@@ -240,6 +241,10 @@ execute(address_space *as,
         break;
 
     case FENCE_I:
+        break;
+
+    case MRET:
+        new_pc = trap_exit();
         break;
 
     case WFI:

@@ -17,8 +17,8 @@
 #include "trap.h"
 
 static int trace_decode_en;
-static int trace_execute_en = 0;
-static uint64_t trace_pc_start = 0x80000000;
+static int trace_execute_en = 1;
+static uint64_t trace_pc_start = 0x80200000;
 
 static void
 trace_decode(uint64_t   pc,
@@ -105,9 +105,6 @@ main()
 
     /* Init CSR */
     csr_init();
-
-    /* Root mmu */
-    root_as.mmu = mmu;
 
     rom = rom_init(&root_as);
     rom_add_file(rom, "image/head.bin", 0);

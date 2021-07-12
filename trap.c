@@ -47,3 +47,21 @@ trap_enter(uint64_t pc, uint64_t cause, uint64_t tval)
 
     return ret;
 }
+
+uint64_t
+trap_exit()
+{
+    uint64_t ret;
+
+    if (priv == S_MODE) {
+        priv = BIT(csr[SSTATUS], MS_SPP) ? S_MODE : U_MODE;
+        SET_BIT(csr[SSTATUS], MS_SIE, BIT(csr[SSTATUS], MS_SPIE));
+        ret = csr[SEPC];
+    } else {
+        priv = BITS(csr[MSTATUS], 12, 11);
+        SET_BIT(csr[MSTATUS], MS_MIE, BIT(csr[MSTATUS], MS_MPIE));
+        ret = csr[MEPC];
+    }
+
+    return ret;
+}

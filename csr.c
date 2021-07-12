@@ -21,6 +21,10 @@ csr_name(uint32_t csr_addr)
     {
     case USTATUS:
         return "ustatus";
+    case STVEC:
+        return "stvec";
+    case SSCRATCH:
+        return "sscratch";
     case SATP:
         return "satp";
     case MISA:
