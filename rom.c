@@ -12,7 +12,9 @@
 #include "device.h"
 
 #define ROM_ADDRESS_SPACE_START 0x0000000000001000
-#define ROM_ADDRESS_SPACE_END   0x000000000FFFFFFF
+#define ROM_ADDRESS_SPACE_END   0x00000000000FFFFF
+#define ROM_ADDRESS_SPACE_SIZE  \
+    ((size_t)ROM_ADDRESS_SPACE_END - (size_t)ROM_ADDRESS_SPACE_START + 1)
 
 typedef struct _rom_t
 {
@@ -96,6 +98,9 @@ rom_add_file(device_t *dev, const char *filename, size_t base)
         panic("%s: bad base %x\n", __func__, base);
 
     size = ROUND_UP((base + info.st_size), 8);
+
+    if (size > ROM_ADDRESS_SPACE_SIZE)
+        panic("%s: bad size %x\n", __func__, size);
 
     ptr = calloc(1, size);
     if (ptr == NULL)

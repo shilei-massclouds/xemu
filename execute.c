@@ -138,7 +138,7 @@ execute(address_space *as,
         break;
 
     case ADDIW:
-        rd_val = TO_WORD(reg[rs1] + imm);
+        rd_val = TO_WORD((int32_t)reg[rs1] + imm);
         break;
 
     case ADD:
@@ -154,7 +154,7 @@ execute(address_space *as,
         break;
 
     case ADDW:
-        rd_val = TO_WORD(reg[rs1] + reg[rs2]);
+        rd_val = TO_WORD((int32_t)reg[rs1] + (int32_t)reg[rs2]);
         break;
 
     case SLTI:
@@ -170,7 +170,7 @@ execute(address_space *as,
         break;
 
     case SUBW:
-        rd_val = TO_WORD(reg[rs1] - reg[rs2]);
+        rd_val = TO_WORD((int32_t)reg[rs1] - (int32_t)reg[rs2]);
         break;
 
     case SLLI:
@@ -178,7 +178,7 @@ execute(address_space *as,
         break;
 
     case SLLIW:
-        rd_val = TO_WORD(reg[rs1] << BITS(imm, 4, 0));
+        rd_val = TO_WORD((uint32_t)reg[rs1] << BITS(imm, 4, 0));
         break;
 
     case SLL:
@@ -186,7 +186,7 @@ execute(address_space *as,
         break;
 
     case SLLW:
-        rd_val = TO_WORD(reg[rs1] << BITS(reg[rs2], 4, 0));
+        rd_val = TO_WORD((uint32_t)reg[rs1] << BITS(reg[rs2], 4, 0));
         break;
 
     case XORI:
@@ -202,7 +202,7 @@ execute(address_space *as,
         break;
 
     case SRLIW:
-        rd_val = TO_WORD(reg[rs1] >> BITS(imm, 4, 0));
+        rd_val = TO_WORD((uint32_t)reg[rs1] >> BITS(imm, 4, 0));
         break;
 
     case SRL:
@@ -210,7 +210,7 @@ execute(address_space *as,
         break;
 
     case SRLW:
-        rd_val = TO_WORD(reg[rs1] >> BITS(reg[rs2], 4, 0));
+        rd_val = TO_WORD((uint32_t)reg[rs1] >> BITS(reg[rs2], 4, 0));
         break;
 
     case SRAI:
@@ -269,7 +269,7 @@ execute(address_space *as,
         rd_val = csr[csr_addr];
         csr[csr_addr] = reg[rs1];
         if (csr_addr == 0)
-            printf("#DEBUG:[%lx]: %lx\n", pc, reg[rs1]);
+            fprintf(stderr, "#DEBUG:[%lx]: %lx\n", pc, reg[rs1]);
         break;
 
     case CSRRS:
@@ -418,7 +418,7 @@ execute(address_space *as,
         break;
 
     default:
-        panic("%s: bad op (%s)\n", __func__, op_name(op));
+        panic("%s: bad op (%s) at: %x\n", __func__, op_name(op), pc);
     }
 
     if (rd)

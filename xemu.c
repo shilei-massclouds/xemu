@@ -17,8 +17,13 @@
 #include "trap.h"
 
 static int trace_decode_en;
-static int trace_execute_en = 1;
-static uint64_t trace_pc_start = 0xffffffe00001b9a6;
+static int trace_execute_en = 0;
+static uint64_t trace_pc_start = 0x80000000;
+static uint64_t trace_pc_end = 0xffffffe00087ccac;
+/*
+static uint64_t trace_pc_start = 0xffffffe00087ca1e;
+static uint64_t trace_pc_end = 0xffffffe00087ccac;
+*/
 
 static void
 trace_decode(uint64_t   pc,
@@ -51,7 +56,7 @@ trace_execute(uint64_t   pc,
               uint64_t   imm,
               uint32_t   csr_addr)
 {
-    if (!trace_execute_en || pc < trace_pc_start)
+    if (!trace_execute_en || pc < trace_pc_start || pc > trace_pc_end)
         return;
 
     fprintf(stderr, "[%lx]: %s; rd: %s(0x%0lx); rs1: %s(0x%0lx); rs2: %s(0x%0lx); imm: 0x%0lx\n",
@@ -92,6 +97,7 @@ int
 main()
 {
     device_t *rom;
+    device_t *flash;
     address_space root_as;
     uint32_t inst;
     uint64_t pc = 0x1000;
@@ -106,11 +112,16 @@ main()
     /* Init CSR */
     csr_init();
 
+    plic_init(&root_as);
+    clint_init(&root_as);
+
     rom = rom_init(&root_as);
-    rom_add_file(rom, "image/head.bin", 0);
+    rom_add_file(rom, "image/bios.bin", 0);
     rom_add_file(rom, "image/virt.dtb", 0x100);
     rom_add_file(rom, "image/fw_jump.bin", 0x2000);
-    rom_add_file(rom, "image/payload.bin", 0x20000);
+
+    flash = flash_init(&root_as);
+    flash_add_file(flash, "image/payload.bin", 0x100);
 
     ram_init(&root_as);
 

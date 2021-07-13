@@ -14,6 +14,18 @@ typedef struct _device
 } device_t;
 
 device_t *
+plic_init(address_space *parent_as);
+
+device_t *
+clint_init(address_space *parent_as);
+
+device_t *
+flash_init(address_space *parent_as);
+
+void
+flash_add_file(device_t *dev, const char *filename, size_t base);
+
+device_t *
 rom_init(address_space *parent_as);
 
 void
