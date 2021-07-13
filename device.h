@@ -14,6 +14,9 @@ typedef struct _device
 } device_t;
 
 device_t *
+pci_host_init(address_space *parent_as);
+
+device_t *
 plic_init(address_space *parent_as);
 
 device_t *
@@ -36,5 +39,8 @@ ram_init(address_space *parent_as);
 
 device_t *
 uart_init(address_space *parent_as);
+
+device_t *
+virtio_mmio_init(address_space *parent_as, uint64_t start, uint64_t end);
 
 #endif /* DEVICE_H */

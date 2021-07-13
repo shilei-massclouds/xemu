@@ -314,19 +314,39 @@ execute(address_space *as,
         break;
 
     case DIV:
-        rd_val = (int64_t)reg[rs1] / (int64_t)reg[rs2];
+        if (reg[rs2] == 0)
+            rd_val = -1;
+        else if (((int64_t)reg[rs2] == -1) && (reg[rs1] == (1UL << 63)))
+            rd_val = (1UL << 63);
+        else
+            rd_val = (int64_t)reg[rs1] / (int64_t)reg[rs2];
+
         break;
 
     case DIVU:
-        rd_val = reg[rs1] / reg[rs2];
+        if (reg[rs2] == 0)
+            rd_val = (uint64_t) -1;
+        else
+            rd_val = reg[rs1] / reg[rs2];
+
         break;
 
     case REM:
-        rd_val = (int64_t)reg[rs1] % (int64_t)reg[rs2];
+        if (reg[rs2] == 0)
+            rd_val = (int64_t)reg[rs1];
+        else if (((int64_t)reg[rs2] == -1) && (reg[rs1] == (1UL << 63)))
+            rd_val = 0;
+        else
+            rd_val = (int64_t)reg[rs1] % (int64_t)reg[rs2];
+
         break;
 
     case REMU:
-        rd_val = reg[rs1] % reg[rs2];
+        if (reg[rs2] == 0)
+            rd_val = reg[rs1];
+        else
+            rd_val = reg[rs1] % reg[rs2];
+
         break;
 
     case MULW:
@@ -334,19 +354,39 @@ execute(address_space *as,
         break;
 
     case DIVW:
-        rd_val = TO_WORD((int32_t)reg[rs1] / (int32_t)reg[rs2]);
+        if ((int32_t)reg[rs2] == 0)
+            rd_val = (int32_t) -1;
+        else if (((int32_t)reg[rs2] == -1) && ((uint32_t)reg[rs1] == (1 << 31)))
+            rd_val = (int32_t)(1 << 31);
+        else
+            rd_val = TO_WORD((int32_t)reg[rs1] / (int32_t)reg[rs2]);
+
         break;
 
     case DIVUW:
-        rd_val = TO_WORD((uint32_t)reg[rs1] / (uint32_t)reg[rs2]);
+        if ((int32_t)reg[rs2] == 0)
+            rd_val = (uint32_t) -1;
+        else
+            rd_val = TO_WORD((uint32_t)reg[rs1] / (uint32_t)reg[rs2]);
+
         break;
 
     case REMW:
-        rd_val = TO_WORD((int32_t)reg[rs1] % (int32_t)reg[rs2]);
+        if ((int32_t)reg[rs2] == 0)
+            rd_val = (int32_t)reg[rs1];
+        else if (((int32_t)reg[rs2] == -1) && ((uint32_t)reg[rs1] == (1 << 31)))
+            rd_val = 0;
+        else
+            rd_val = TO_WORD((int32_t)reg[rs1] % (int32_t)reg[rs2]);
+
         break;
 
     case REMUW:
-        rd_val = TO_WORD((uint32_t)reg[rs1] % (uint32_t)reg[rs2]);
+        if ((uint32_t)reg[rs2] == 0)
+            rd_val = (uint32_t)reg[rs1];
+        else
+            rd_val = TO_WORD((uint32_t)reg[rs1] % (uint32_t)reg[rs2]);
+
         break;
 
     case LR_D:

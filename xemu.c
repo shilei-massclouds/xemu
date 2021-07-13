@@ -16,14 +16,13 @@
 #include "mmu.h"
 #include "trap.h"
 
+#define VIRTIO_MMIO_AS_START_0  0x0000000010001000
+#define VIRTIO_MMIO_AS_END_0    0x0000000010001FFF
+
 static int trace_decode_en;
 static int trace_execute_en = 0;
 static uint64_t trace_pc_start = 0x80000000;
 static uint64_t trace_pc_end = 0xffffffe00087ccac;
-/*
-static uint64_t trace_pc_start = 0xffffffe00087ca1e;
-static uint64_t trace_pc_end = 0xffffffe00087ccac;
-*/
 
 static void
 trace_decode(uint64_t   pc,
@@ -96,6 +95,7 @@ fetch(address_space *as, uint64_t pc, int *except)
 int
 main()
 {
+    int i;
     device_t *rom;
     device_t *flash;
     address_space root_as;
@@ -112,6 +112,8 @@ main()
     /* Init CSR */
     csr_init();
 
+    pci_host_init(&root_as);
+
     plic_init(&root_as);
     clint_init(&root_as);
 
@@ -126,6 +128,12 @@ main()
     ram_init(&root_as);
 
     uart_init(&root_as);
+
+    for (i = 0; i < 8; i++) {
+        virtio_mmio_init(&root_as,
+                         VIRTIO_MMIO_AS_START_0 + i * 0x1000,
+                         VIRTIO_MMIO_AS_END_0 + i * 0x1000);
+    }
 
     while (1) {
         uint64_t next_pc;
