@@ -14,6 +14,9 @@ typedef struct _device
 } device_t;
 
 device_t *
+rtc_init(address_space *parent_as);
+
+device_t *
 pci_host_init(address_space *parent_as);
 
 device_t *

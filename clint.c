@@ -52,11 +52,3 @@ clint_init(address_space *parent_as)
 
     return (device_t *) clint;
 }
-
-/*
-#include <stdio.h>
-#include <string.h>
-#include <sys/stat.h>
-
-#include "util.h"
-*/

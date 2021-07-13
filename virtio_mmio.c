@@ -47,11 +47,3 @@ virtio_mmio_init(address_space *parent_as, uint64_t start, uint64_t end)
 
     return (device_t *) virtio_mmio;
 }
-
-/*
-#include <stdio.h>
-#include <string.h>
-#include <sys/stat.h>
-
-#include "util.h"
-*/

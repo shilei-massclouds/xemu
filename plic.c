@@ -1,5 +1,5 @@
 /*
- * PCI_HOST
+ * PLIC
  */
 
 #include <malloc.h>
@@ -7,24 +7,24 @@
 #include "address_space.h"
 #include "device.h"
 
-#define PCI_HOST_ADDRESS_SPACE_START 0x0000000030000000
-#define PCI_HOST_ADDRESS_SPACE_END   0x000000003FFFFFFF
+#define PLIC_ADDRESS_SPACE_START 0x000000000C000000
+#define PLIC_ADDRESS_SPACE_END   0x000000000FFFFFFF
 
-typedef struct _pci_host_t
+typedef struct _plic_t
 {
     device_t dev;
-} pci_host_t;
+} plic_t;
 
 
 static uint64_t
-pci_host_read(void *dev, uint64_t addr, size_t size, params_t params)
+plic_read(void *dev, uint64_t addr, size_t size, params_t params)
 {
     fprintf(stderr, "%s: need to be implemented!\n", __func__);
     return 0;
 }
 
 static uint64_t
-pci_host_write(void *dev, uint64_t addr, uint64_t data, size_t size,
+plic_write(void *dev, uint64_t addr, uint64_t data, size_t size,
            params_t params)
 {
     fprintf(stderr, "%s: need to be implemented!\n", __func__);
@@ -32,23 +32,23 @@ pci_host_write(void *dev, uint64_t addr, uint64_t data, size_t size,
 }
 
 device_t *
-pci_host_init(address_space *parent_as)
+plic_init(address_space *parent_as)
 {
-    pci_host_t *pci_host;
+    plic_t *plic;
 
-    pci_host = calloc(1, sizeof(pci_host_t));
-    pci_host->dev.name = "pci_host";
+    plic = calloc(1, sizeof(plic_t));
+    plic->dev.name = "plic";
 
-    init_address_space(&(pci_host->dev.as),
-                       PCI_HOST_ADDRESS_SPACE_START,
-                       PCI_HOST_ADDRESS_SPACE_END);
+    init_address_space(&(plic->dev.as),
+                       PLIC_ADDRESS_SPACE_START,
+                       PLIC_ADDRESS_SPACE_END);
 
-    pci_host->dev.as.ops.read_op = pci_host_read;
-    pci_host->dev.as.ops.write_op = pci_host_write;
+    plic->dev.as.ops.read_op = plic_read;
+    plic->dev.as.ops.write_op = plic_write;
 
-    pci_host->dev.as.device = pci_host;
+    plic->dev.as.device = plic;
 
-    register_address_space(parent_as, &(pci_host->dev.as));
+    register_address_space(parent_as, &(plic->dev.as));
 
-    return (device_t *) pci_host;
+    return (device_t *) plic;
 }
