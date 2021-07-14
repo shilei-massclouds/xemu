@@ -9,8 +9,8 @@
 
 typedef struct _device
 {
-    const char *name;
-    address_space as;
+    const char      *name;
+    address_space   as;
 } device_t;
 
 device_t *
@@ -45,5 +45,8 @@ uart_init(address_space *parent_as);
 
 device_t *
 virtio_mmio_init(address_space *parent_as, uint64_t start, uint64_t end);
+
+void
+virtio_set_backend(device_t *dev, void *backend);
 
 #endif /* DEVICE_H */

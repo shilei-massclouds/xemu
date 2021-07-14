@@ -16,6 +16,7 @@
 #include "mmu.h"
 #include "trap.h"
 #include "trace.h"
+#include "virtio.h"
 
 #define VIRTIO_MMIO_AS_START_0  0x0000000010001000
 #define VIRTIO_MMIO_AS_END_0    0x0000000010001FFF
@@ -80,9 +81,15 @@ main()
     uart_init(&root_as);
 
     for (i = 0; i < 8; i++) {
-        virtio_mmio_init(&root_as,
-                         VIRTIO_MMIO_AS_START_0 + i * 0x1000,
-                         VIRTIO_MMIO_AS_END_0 + i * 0x1000);
+        device_t *vdev;
+        vdev = virtio_mmio_init(&root_as,
+                                VIRTIO_MMIO_AS_START_0 + i * 0x1000,
+                                VIRTIO_MMIO_AS_END_0 + i * 0x1000);
+
+        if (i == 0) {
+            virtio_dev_t *blk = virtio_blk_init();
+            virtio_set_backend(vdev, blk);
+        }
     }
 
     while (1) {
