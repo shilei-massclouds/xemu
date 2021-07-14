@@ -96,7 +96,7 @@
  */
 
 #define VIRT_MAGIC              0x74726976  /* 'virt' */
-#define VIRT_VENDOR             0x554D4551  /* 'QEMU' */
+#define VIRT_VENDOR             0x554D4558  /* 'XEMU' */
 
 #define VIRT_VERSION_LEGACY         1
 #define VIRT_VERSION                2
@@ -134,15 +134,45 @@
 #define VIRTIO_ID_PMEM              27 /* virtio pmem */
 #define VIRTIO_ID_MAC80211_HWSIM    29 /* virtio mac80211-hwsim */
 
+/* Features */
+
+/* Do we get callbacks when the ring is completely used, even if we've
+ * suppressed them? */
+#define VIRTIO_F_NOTIFY_ON_EMPTY    0x01000000
+
+/* Can the device handle any descriptor layout? */
+#define VIRTIO_F_ANY_LAYOUT         0x08000000
+
+/* We support indirect buffer descriptors */
+#define VIRTIO_RING_F_INDIRECT_DESC 0x10000000
+
+/* The Guest publishes the used index for which it expects an interrupt
+ * at the end of the avail ring. Host should ignore the avail->flags field. */
+/* The Host publishes the avail index for which it expects a kick
+ * at the end of the used ring. Guest should ignore the used->flags field. */
+#define VIRTIO_RING_F_EVENT_IDX     0x20000000
+
+/* v1.0 compliant. */
+#define VIRTIO_F_VERSION_1          0x100000000
+
+#define VIRTIO_COMMON_FEATURES \
+    (VIRTIO_F_NOTIFY_ON_EMPTY | VIRTIO_F_ANY_LAYOUT | \
+     VIRTIO_RING_F_INDIRECT_DESC | VIRTIO_RING_F_EVENT_IDX)
+
+#define VIRTIO_QUEUE_MAX 1024
+
+#define VIRTQUEUE_MAX_SIZE 1024
 
 typedef struct _virtio_dev_t
 {
     uint32_t id;
+    uint8_t config[256];
 
     uint32_t (*config_readb)(struct _virtio_dev_t *vdev, uint32_t addr);
     void (*config_writeb)(struct _virtio_dev_t *vdev,
                           uint32_t addr, uint32_t data);
 
+    uint64_t (*get_features)(uint64_t features);
 } virtio_dev_t;
 
 

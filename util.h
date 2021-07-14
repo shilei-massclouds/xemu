@@ -5,6 +5,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <stdint.h>
 
 #define PAGE_SIZE 4096
 #define PAGE_BITS 12
@@ -36,5 +37,17 @@
     (dest = (((dest) & ~(1UL << (index))) | (bit << (index))))
 
 void panic(const char *msg, ...);
+
+/**
+ * ctz32 - count trailing zeros in a 32-bit value.
+ * @val: The value to search
+ *
+ * Returns 32 if the value is zero.  Note that the GCC builtin is
+ * undefined if the value is zero.
+ */
+static inline int ctz32(uint32_t val)
+{
+    return val ? __builtin_ctz(val) : 32;
+}
 
 #endif /* UTIL_H */
