@@ -13,18 +13,6 @@
 typedef struct _virtio_mmio_t
 {
     device_t dev;
-
-    uint64_t    host_features;
-    bool        host_features_sel;
-    uint64_t    guest_features;
-    bool        guest_features_sel;
-    uint32_t    guest_page_shift;
-    uint16_t    queue_sel;
-    uint64_t    vring_desc;
-    uint32_t    vring_num;
-    uint32_t    vring_align;
-    uint8_t     status;
-
     virtio_dev_t *backend;
 } virtio_mmio_t;
 
@@ -33,7 +21,7 @@ static uint64_t
 virtio_mmio_read(void *dev, uint64_t addr, size_t size, params_t params)
 {
     uint64_t host_features = 0;
-    virtio_mmio_t *vdev = (virtio_mmio_t *) dev;
+    virtio_dev_t *vdev = ((virtio_mmio_t *)dev)->backend;
 
     if (addr >= VIRTIO_MMIO_CONFIG) {
         addr -= VIRTIO_MMIO_CONFIG;
@@ -41,10 +29,10 @@ virtio_mmio_read(void *dev, uint64_t addr, size_t size, params_t params)
         if (size != 1)
             panic("%s: bad size %ld\n", __func__, size);
 
-        if (vdev->backend == NULL)
+        if (vdev == NULL)
             panic("%s: NO backend\n", __func__);
 
-        return vdev->backend->config[addr];
+        return vdev->config[addr];
     }
 
     if (size != 4)
@@ -59,14 +47,14 @@ virtio_mmio_read(void *dev, uint64_t addr, size_t size, params_t params)
         return VIRT_VERSION_LEGACY;
 
     case VIRTIO_MMIO_DEVICE_ID:
-        return vdev->backend ? vdev->backend->id : 0;
+        return vdev ? vdev->id : 0;
 
     case VIRTIO_MMIO_VENDOR_ID:
         return VIRT_VENDOR;
 
     case VIRTIO_MMIO_DEVICE_FEATURES:
-        if (vdev->backend)
-            host_features = vdev->backend->get_features(vdev->host_features);
+        if (vdev)
+            host_features = vdev->get_features();
 
         return vdev->host_features_sel ? 0 : host_features;
 
@@ -74,11 +62,10 @@ virtio_mmio_read(void *dev, uint64_t addr, size_t size, params_t params)
         return VIRTQUEUE_MAX_SIZE;
 
     case VIRTIO_MMIO_QUEUE_PFN:
-        return vdev->vring_desc >> vdev->guest_page_shift;
+        return (uint64_t)vdev->vq->vring.desc >> vdev->guest_page_shift;
 
     case VIRTIO_MMIO_STATUS:
         return vdev->status;
-        break;
 
     default:
         printf("%s: addr(0x%lx) size(%ld) need to be implemented!\n",
@@ -91,9 +78,9 @@ virtio_mmio_read(void *dev, uint64_t addr, size_t size, params_t params)
 
 static uint64_t
 virtio_mmio_write(void *dev, uint64_t addr, uint64_t data, size_t size,
-           params_t params)
+                  params_t params)
 {
-    virtio_mmio_t *vdev = (virtio_mmio_t *) dev;
+    virtio_dev_t *vdev = ((virtio_mmio_t *)dev)->backend;
 
     if (size != 4)
         panic("%s: bad size %ld\n", __func__, size);
@@ -126,22 +113,23 @@ virtio_mmio_write(void *dev, uint64_t addr, uint64_t data, size_t size,
 
     case VIRTIO_MMIO_QUEUE_PFN:
         if (data)
-            vdev->vring_desc = (data << vdev->guest_page_shift);
+            vring_init(&(vdev->vq->vring), data, vdev->guest_page_shift);
         else
-            vdev->vring_desc = 0;
+            vdev->vq->vring.desc = 0;
 
         break;
 
     case VIRTIO_MMIO_QUEUE_NUM:
-        vdev->vring_num = data;
+        vdev->vq->vring.num = data;
         break;
 
     case VIRTIO_MMIO_QUEUE_ALIGN:
-        vdev->vring_align = data;
+        vdev->vq->vring.align = data;
         break;
 
     case VIRTIO_MMIO_QUEUE_NOTIFY:
         printf("notify!\n");
+        vqueue_pop(vdev->vq);
         break;
 
     case VIRTIO_MMIO_STATUS:
@@ -171,8 +159,6 @@ virtio_mmio_init(address_space *parent_as, uint64_t start, uint64_t end)
     virtio_mmio->dev.as.ops.write_op = virtio_mmio_write;
 
     virtio_mmio->dev.as.device = virtio_mmio;
-
-    virtio_mmio->host_features = VIRTIO_COMMON_FEATURES;
 
     register_address_space(parent_as, &(virtio_mmio->dev.as));
 

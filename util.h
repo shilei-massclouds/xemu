@@ -36,6 +36,13 @@
 #define SET_BIT(dest, index, bit) \
     (dest = (((dest) & ~(1UL << (index))) | (bit << (index))))
 
+/* Round number down to multiple */
+#define ALIGN_DOWN(n, m) ((n) / (m) * (m))
+
+/* Round number up to multiple. Safe when m is not a power of 2 (see
+ * ROUND_UP for a faster version when a power of 2 is guaranteed) */
+#define ALIGN_UP(n, m) ALIGN_DOWN((n) + (m) - 1, (m))
+
 void panic(const char *msg, ...);
 
 /**

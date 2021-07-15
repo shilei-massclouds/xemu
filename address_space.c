@@ -7,6 +7,8 @@
 #include "util.h"
 #include "mmu.h"
 
+address_space root_as;
+
 static uint64_t
 read_dummy(void *dev, uint64_t addr, size_t size, params_t params)
 {
@@ -54,6 +56,9 @@ read_nommu(address_space *as, uint64_t addr, size_t size, params_t params)
     if (!(size == 1 || size == 2 || size == 4 || size == 8))
         panic("%s: bad size %d\n", __func__, size);
 
+    if (as == NULL)
+        as = &root_as;
+
     child = as->children;
     while (child) {
         if (addr >= child->start && addr <= child->end)
@@ -84,6 +89,9 @@ write_nommu(address_space *as, uint64_t addr, size_t size, uint64_t data,
 
     if (!(size == 1 || size == 2 || size == 4 || size == 8))
         panic("%s: bad size %d\n", __func__, size);
+
+    if (as == NULL)
+        as = &root_as;
 
     child = as->children;
     while (child) {

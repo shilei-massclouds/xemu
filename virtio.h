@@ -5,7 +5,8 @@
 #ifndef _VIRTIO_H_
 #define _VIRTIO_H_
 
-#include <stdint.h>
+#include "types.h"
+#include "util.h"
 
 
 /*
@@ -163,20 +164,90 @@
 
 #define VIRTQUEUE_MAX_SIZE 1024
 
-typedef struct _virtio_dev_t
+typedef struct _vring_desc_t
+{
+    uint64_t addr;
+    uint32_t len;
+    uint16_t flags;
+    uint16_t next;
+} vring_desc_t;
+
+typedef struct _vring_avail_t
+{
+    uint16_t flags;
+    uint16_t idx;
+    uint16_t ring[];
+} vring_avail_t;
+
+typedef struct _vring_used_elem_t
 {
     uint32_t id;
-    uint8_t config[256];
+    uint32_t len;
+} vring_used_elem_t;
+
+typedef struct _vring_used_t
+{
+    uint16_t flags;
+    uint16_t idx;
+    vring_used_elem_t ring[];
+} vring_used_t;
+
+typedef struct _vring_t
+{
+    unsigned int num;
+    unsigned int num_default;
+    unsigned int align;
+
+    uint64_t desc;
+    uint64_t avail;
+    uint64_t used;
+} vring_t;
+
+typedef struct _vqueue_t
+{
+    vring_t vring;
+
+    /* Next head to pop */
+    uint16_t last_avail_idx;
+} vqueue_t;
+
+typedef struct _virtio_dev_t
+{
+    uint32_t    id;
+
+    bool        host_features_sel;
+    uint64_t    guest_features;
+    bool        guest_features_sel;
+    uint32_t    guest_page_shift;
+    uint16_t    queue_sel;
+    uint8_t     status;
+
+    vqueue_t    *vq;
+    uint16_t    num_queues;
+
+    uint8_t     config[256];
 
     uint32_t (*config_readb)(struct _virtio_dev_t *vdev, uint32_t addr);
     void (*config_writeb)(struct _virtio_dev_t *vdev,
                           uint32_t addr, uint32_t data);
 
-    uint64_t (*get_features)(uint64_t features);
+    uint64_t (*get_features)();
 } virtio_dev_t;
 
 
 virtio_dev_t *
 virtio_blk_init();
+
+static inline uint64_t
+vring_align(uint64_t addr, uint64_t align)
+{
+    return ALIGN_UP(addr, align);
+}
+
+void *
+vqueue_pop(vqueue_t *vq);
+
+void
+vring_init(vring_t *vring, uint64_t pfn, uint32_t page_shift);
 
 #endif /*  _VIRTIO_H_ */

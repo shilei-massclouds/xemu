@@ -21,6 +21,7 @@
 #define VIRTIO_MMIO_AS_START_0  0x0000000010001000
 #define VIRTIO_MMIO_AS_END_0    0x0000000010001FFF
 
+extern address_space root_as;
 
 uint32_t
 fetch(address_space *as, uint64_t pc, int *except)
@@ -48,7 +49,6 @@ main()
     int i;
     device_t *rom;
     device_t *flash;
-    address_space root_as;
     uint32_t inst;
     uint64_t pc = 0x1000;
 

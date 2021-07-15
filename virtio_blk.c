@@ -49,8 +49,10 @@ virtio_blk_config_writeb(virtio_dev_t *dev, uint32_t addr, uint32_t data)
 }
 
 static uint64_t
-virtio_blk_get_features(uint64_t features)
+virtio_blk_get_features()
 {
+    uint64_t features = VIRTIO_COMMON_FEATURES;
+
     if ((features & VIRTIO_F_VERSION_1) == 0) {
         features &= ~VIRTIO_F_ANY_LAYOUT;
         features |= VIRTIO_BLK_F_SCSI;
@@ -83,6 +85,9 @@ virtio_blk_init()
     blk->vdev.config[0x30] = 0xFF;
     blk->vdev.config[0x31] = 0xFF;
     blk->vdev.config[0x32] = 0x3F;
+
+    blk->vdev.vq = calloc(1, sizeof(vqueue_t));
+    blk->vdev.num_queues = 1;
 
     return (virtio_dev_t *) blk;
 }
