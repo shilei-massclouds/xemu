@@ -6,6 +6,7 @@
 #define UTIL_H
 
 #include <stdint.h>
+#include <stdio.h>
 
 #define PAGE_SIZE 4096
 #define PAGE_BITS 12
@@ -42,6 +43,16 @@
 /* Round number up to multiple. Safe when m is not a power of 2 (see
  * ROUND_UP for a faster version when a power of 2 is guaranteed) */
 #define ALIGN_UP(n, m) ALIGN_DOWN((n) + (m) - 1, (m))
+
+#define IO_VEC_F_READ   0x1
+#define IO_VEC_F_WRITE  0x2
+
+typedef struct _iovec_t
+{
+    uint64_t base;
+    size_t   len;
+    uint32_t flags;
+} iovec_t;
 
 void panic(const char *msg, ...);
 

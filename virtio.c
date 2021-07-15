@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <malloc.h>
 
 #include "virtio.h"
 #include "address_space.h"
@@ -58,13 +59,46 @@ static void
 vring_desc_read(vqueue_t *vq, uint32_t idx, vring_desc_t *desc)
 {
     vring_t *vring = (vring_t *)vq;
-
     uint64_t pa = vring->desc + idx * sizeof(vring_desc_t);
-
     vring_read(pa, (uint8_t *)desc, sizeof(vring_desc_t));
 }
 
-void *
+vq_item_t *
+vring_desc_read_indirect(uint64_t addr, uint32_t len)
+{
+    uint64_t offset = 0;
+    uint32_t iov_num = 0;
+    iovec_t iov[VIRTQUEUE_MAX_SIZE];
+    vring_desc_t desc;
+    vq_item_t *item;
+
+    if ((len == 0) || (len % sizeof(vring_desc_t)))
+        panic("bad size %u for indirect table\n", len);
+
+    while (1) {
+        vring_read(addr + offset, (uint8_t *)&desc, sizeof(vring_desc_t));
+
+        iov[iov_num].base   = desc.addr;
+        iov[iov_num].len    = desc.len;
+        iov[iov_num].flags  = (desc.flags & VRING_DESC_F_WRITE) ?
+                              IO_VEC_F_WRITE : IO_VEC_F_READ;
+        iov_num++;
+
+        if (!(desc.flags & VRING_DESC_F_NEXT))
+            break;
+
+        offset = desc.next * sizeof(vring_desc_t);
+    }
+
+    item = malloc(sizeof(vq_item_t));
+    item->num = iov_num;
+    item->iov = malloc(iov_num * sizeof(iovec_t));
+    memcpy(item->iov, iov, iov_num * sizeof(iovec_t));
+
+    return item;
+}
+
+vq_item_t *
 vqueue_pop(vqueue_t *vq)
 {
     uint32_t head;
@@ -76,6 +110,12 @@ vqueue_pop(vqueue_t *vq)
     printf("%s: head %u\n", __func__, head);
 
     vring_desc_read(vq, head, &desc);
+
+    if (desc.flags & VRING_DESC_F_INDIRECT) {
+        return vring_desc_read_indirect(desc.addr, desc.len);
+    } else {
+        panic("%s: now only support indirect desc table!\n", __func__);
+    }
 
     printf("%s: desc addr(0x%lx) len(%u) flags(0x%x) next(%u)\n",
            __func__, desc.addr, desc.len, desc.flags, desc.next);

@@ -8,6 +8,12 @@
 #include "types.h"
 #include "util.h"
 
+/* This marks a buffer as continuing via the next field. */
+#define VRING_DESC_F_NEXT       0x1
+/* This marks a buffer as write-only (otherwise read-only). */
+#define VRING_DESC_F_WRITE      0x2
+/* This means the buffer contains a list of buffer descriptors. */
+#define VRING_DESC_F_INDIRECT   0x4
 
 /*
  * MMIO control registers
@@ -211,6 +217,12 @@ typedef struct _vqueue_t
     uint16_t last_avail_idx;
 } vqueue_t;
 
+typedef struct _vq_item_t
+{
+    uint32_t num;
+    iovec_t *iov;
+} vq_item_t;
+
 typedef struct _virtio_dev_t
 {
     uint32_t    id;
@@ -244,7 +256,7 @@ vring_align(uint64_t addr, uint64_t align)
     return ALIGN_UP(addr, align);
 }
 
-void *
+vq_item_t *
 vqueue_pop(vqueue_t *vq);
 
 void
