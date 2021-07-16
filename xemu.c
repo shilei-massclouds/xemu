@@ -23,6 +23,8 @@
 
 extern address_space root_as;
 
+const char *vda_filename = "./image/test.raw";
+
 uint32_t
 fetch(address_space *as, uint64_t pc, int *except)
 {
@@ -87,7 +89,7 @@ main()
                                 VIRTIO_MMIO_AS_END_0 + i * 0x1000);
 
         if (i == 0) {
-            virtio_dev_t *blk = virtio_blk_init();
+            virtio_dev_t *blk = virtio_blk_init(vda_filename);
             virtio_set_backend(vdev, blk);
         }
     }

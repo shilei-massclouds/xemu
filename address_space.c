@@ -3,6 +3,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "util.h"
 #include "mmu.h"
@@ -115,4 +116,56 @@ write(address_space *as, uint64_t vaddr, size_t size, uint64_t data,
         return 0;
 
     return write_nommu(as, paddr, size, data, params);
+}
+
+void
+read_blob(uint64_t addr, size_t size, uint8_t *data)
+{
+    uint64_t dword;
+    uint8_t byte;
+
+    if ((addr % 8))
+        panic("%s: not align to 8\n", __func__);
+
+    while (size >= 8) {
+        dword = read_nommu(NULL, addr, 8, 0);
+        memcpy(data, &dword, 8);
+        size -= 8;
+        addr += 8;
+        data += 8;
+    }
+
+    while (size) {
+        byte = read_nommu(NULL, addr, 1, 0);
+        memcpy(data, &byte, 1);
+        size--;
+        addr++;
+        data++;
+    }
+}
+
+void
+write_blob(uint64_t addr, size_t size, uint8_t *data)
+{
+    uint64_t dword;
+    uint8_t byte;
+
+    if ((addr % 8))
+        panic("%s: addr 0x%lx not align to 8\n", __func__, addr);
+
+    while (size >= 8) {
+        memcpy(&dword, data, 8);
+        write_nommu(NULL, addr, 8, dword, 0);
+        size -= 8;
+        addr += 8;
+        data += 8;
+    }
+
+    while (size) {
+        byte = *data;
+        write_nommu(NULL, addr, 1, byte, 0);
+        size--;
+        addr++;
+        data++;
+    }
 }

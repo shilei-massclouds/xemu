@@ -80,8 +80,7 @@ static uint64_t
 virtio_mmio_write(void *dev, uint64_t addr, uint64_t data, size_t size,
                   params_t params)
 {
-    int i;
-    vq_item_t *item;
+    vq_request_t *req;
     virtio_dev_t *vdev = ((virtio_mmio_t *)dev)->backend;
 
     if (size != 4)
@@ -131,14 +130,11 @@ virtio_mmio_write(void *dev, uint64_t addr, uint64_t data, size_t size,
 
     case VIRTIO_MMIO_QUEUE_NOTIFY:
         printf("notify!\n");
-        item = vqueue_pop(vdev->vq);
+        req = vqueue_pop(vdev->vq);
 
-        for (i = 0; i < item->num; i++)
-            printf("%s: desc addr(0x%lx) len(%lu) flags(0x%x)\n",
-                   __func__,
-                   item->iov[i].base, item->iov[i].len,
-                   item->iov[i].flags);
+        vdev->handle_request(vdev, req);
 
+        vring_used_write(vdev->vq, req);
         break;
 
     case VIRTIO_MMIO_STATUS:

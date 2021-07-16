@@ -73,4 +73,10 @@ uint64_t
 write(address_space *as, uint64_t vaddr, size_t size, uint64_t data,
       params_t params, int *except);
 
+void
+read_blob(uint64_t addr, size_t size, uint8_t *data);
+
+void
+write_blob(uint64_t addr, size_t size, uint8_t *data);
+
 #endif /* ADDRESS_SAPCE_H */

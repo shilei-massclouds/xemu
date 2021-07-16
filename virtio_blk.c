@@ -6,6 +6,7 @@
 #include <malloc.h>
 
 #include "virtio.h"
+#include "address_space.h"
 
 /* Feature bits */
 #define VIRTIO_BLK_F_BARRIER        0x1     /* Does host support barriers? */
@@ -28,10 +29,31 @@
      VIRTIO_BLK_F_TOPOLOGY | VIRTIO_BLK_F_CONFIG_WCE | \
      VIRTIO_BLK_F_DISCARD | VIRTIO_BLK_F_WRITE_ZEROES)
 
+/* And this is the final byte of the write scatter-gather list. */
+#define VIRTIO_BLK_S_OK     0
+#define VIRTIO_BLK_S_IOERR  1
+#define VIRTIO_BLK_S_UNSUPP 2
+
+
+/*
+ * This comes first in the read scatter-gather list.
+ * For legacy virtio, if VIRTIO_F_ANY_LAYOUT is not negotiated,
+ * this is the first element of the read scatter-gather list.
+ */
+typedef struct _virtio_blk_outhdr {
+    /* VIRTIO_BLK_T* */
+    uint32_t type;
+    /* io priority. */
+    uint32_t ioprio;
+    /* Sector (ie. 512 byte offset) */
+    uint64_t sector;
+} virtio_blk_outhdr;
 
 typedef struct _virtio_blk_t
 {
     virtio_dev_t vdev;
+
+    const char *filename;
 } virtio_blk_t;
 
 
@@ -61,17 +83,72 @@ virtio_blk_get_features()
     return (features | VIRTIO_BLK_FEATURES);
 }
 
+static int
+virtio_blk_handle_request(virtio_dev_t *vdev, vq_request_t *req)
+{
+    FILE *fp;
+    uint8_t *data;
+    virtio_blk_outhdr outhdr;
+    virtio_blk_t *blk = (virtio_blk_t *) vdev;
+
+    int i;
+    for (i = 0; i < req->num; i++)
+        printf("%s: desc addr(0x%lx) len(%lu) flags(0x%x)\n",
+               __func__,
+               req->iov[i].base, req->iov[i].len,
+               req->iov[i].flags);
+
+    if (req->num != 3)
+        panic("%s: bad request number %d\n", __func__, req->num);
+
+    /* Request head */
+    if ((req->iov[0].len != sizeof(virtio_blk_outhdr)) ||
+        !(req->iov[0].flags & IO_VEC_F_READ)) {
+        panic("%s: bad out header\n", __func__);
+    }
+
+    read_blob(req->iov[0].base, sizeof(virtio_blk_outhdr), (uint8_t *)&outhdr);
+
+    printf("%s: outhdr type(0x%x) ioprio(%u) sector(0x%lx)\n",
+           __func__,
+           outhdr.type, outhdr.ioprio, outhdr.sector);
+
+    data = malloc(req->iov[1].len);
+
+    fp = fopen(blk->filename, "rb");
+    if (fp == NULL)
+        panic("%s: cannot open file %s\n", __func__, blk->filename);
+
+    if (fread(data, 1, req->iov[1].len, fp) != req->iov[1].len)
+        panic("%s: cannot read file %s\n", __func__, blk->filename);
+
+    fclose(fp);
+
+    write_blob(req->iov[1].base, req->iov[1].len, data);
+
+    free(data);
+
+    write_nommu(NULL, req->iov[2].base, 1, VIRTIO_BLK_S_OK, 0);
+
+    return 0;
+}
+
 virtio_dev_t *
-virtio_blk_init()
+virtio_blk_init(const char *filename)
 {
     virtio_blk_t *blk;
 
     blk = calloc(1, sizeof(virtio_blk_t));
+
+    blk->filename = filename;
+
     blk->vdev.id = VIRTIO_ID_BLOCK;
     blk->vdev.get_features = virtio_blk_get_features;
 
     blk->vdev.config_readb = virtio_blk_config_readb;
     blk->vdev.config_writeb = virtio_blk_config_writeb;
+
+    blk->vdev.handle_request = virtio_blk_handle_request;
 
     blk->vdev.config[0x01] = 0x08;
     blk->vdev.config[0x0c] = 0xFE;

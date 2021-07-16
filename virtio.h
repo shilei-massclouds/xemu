@@ -215,13 +215,16 @@ typedef struct _vqueue_t
 
     /* Next head to pop */
     uint16_t last_avail_idx;
+    uint16_t used_idx;
 } vqueue_t;
 
-typedef struct _vq_item_t
+typedef struct _vq_request_t
 {
+    uint32_t index;
+    uint32_t in_len;
     uint32_t num;
     iovec_t *iov;
-} vq_item_t;
+} vq_request_t;
 
 typedef struct _virtio_dev_t
 {
@@ -244,6 +247,9 @@ typedef struct _virtio_dev_t
                           uint32_t addr, uint32_t data);
 
     uint64_t (*get_features)();
+
+    int (*handle_request)(struct _virtio_dev_t *vdev, vq_request_t *req);
+
 } virtio_dev_t;
 
 
@@ -256,10 +262,13 @@ vring_align(uint64_t addr, uint64_t align)
     return ALIGN_UP(addr, align);
 }
 
-vq_item_t *
+vq_request_t *
 vqueue_pop(vqueue_t *vq);
 
 void
 vring_init(vring_t *vring, uint64_t pfn, uint32_t page_shift);
+
+void
+vring_used_write(vqueue_t *vq, vq_request_t *req);
 
 #endif /*  _VIRTIO_H_ */
