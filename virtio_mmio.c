@@ -13,6 +13,7 @@
 typedef struct _virtio_mmio_t
 {
     device_t dev;
+
     virtio_dev_t *backend;
 } virtio_mmio_t;
 
@@ -21,7 +22,8 @@ static uint64_t
 virtio_mmio_read(void *dev, uint64_t addr, size_t size, params_t params)
 {
     uint64_t host_features = 0;
-    virtio_dev_t *vdev = ((virtio_mmio_t *)dev)->backend;
+    virtio_mmio_t *mmio_dev = (virtio_mmio_t *) dev;
+    virtio_dev_t *vdev = mmio_dev->backend;
 
     if (addr >= VIRTIO_MMIO_CONFIG) {
         addr -= VIRTIO_MMIO_CONFIG;
@@ -63,6 +65,9 @@ virtio_mmio_read(void *dev, uint64_t addr, size_t size, params_t params)
 
     case VIRTIO_MMIO_QUEUE_PFN:
         return (uint64_t)vdev->vq->vring.desc >> vdev->guest_page_shift;
+
+    case VIRTIO_MMIO_INTERRUPT_STATUS:
+        return vdev->isr;
 
     case VIRTIO_MMIO_STATUS:
         return vdev->status;
@@ -130,11 +135,16 @@ virtio_mmio_write(void *dev, uint64_t addr, uint64_t data, size_t size,
 
     case VIRTIO_MMIO_QUEUE_NOTIFY:
         printf("notify!\n");
-        req = vqueue_pop(vdev->vq);
+        while((req = vqueue_pop(vdev->vq))) {
+            vdev->handle_request(vdev, req);
+            vdev->isr |= 0x1;
+            plic_signal(vdev->irq_num);
+        }
+        break;
 
-        vdev->handle_request(vdev, req);
-
-        vring_used_write(vdev->vq, req);
+    case VIRTIO_MMIO_INTERRUPT_ACK:
+        printf("VIRTIO_MMIO_INTERRUPT_ACK\n");
+        vdev->isr &= ~data;
         break;
 
     case VIRTIO_MMIO_STATUS:

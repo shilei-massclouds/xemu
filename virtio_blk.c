@@ -131,8 +131,7 @@ virtio_blk_handle_request(virtio_dev_t *vdev, vq_request_t *req)
 
     write_nommu(NULL, req->iov[2].base, 1, VIRTIO_BLK_S_OK, 0);
 
-    plic_signal(vdev->irq_num);
-
+    vring_used_write(vdev->vq, req);
     return 0;
 }
 

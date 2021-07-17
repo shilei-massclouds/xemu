@@ -11,6 +11,20 @@
 #include "address_space.h"
 
 static inline uint16_t
+vring_avail_idx(vqueue_t *vq)
+{
+    vring_t *vring = (vring_t *)vq;
+    uint64_t pa = vring->avail + offsetof(vring_avail_t, idx);
+    return read_nommu(NULL, pa, 2, 0);
+}
+
+static bool
+virtio_queue_empty(vqueue_t *vq)
+{
+    return vring_avail_idx(vq) == vq->last_avail_idx;
+}
+
+static inline uint16_t
 vring_avail_ring(vqueue_t *vq, int i)
 {
     vring_t *vring = (vring_t *)vq;
@@ -90,6 +104,9 @@ vqueue_pop(vqueue_t *vq)
     uint32_t head;
     vring_desc_t desc;
 
+    if (virtio_queue_empty(vq))
+        return NULL;
+
     if (vqueue_get_head(vq, vq->last_avail_idx++, &head) < 0)
         return NULL;
 
@@ -125,6 +142,14 @@ vring_init(vring_t *vring, uint64_t pfn, uint32_t page_shift)
                               vring->align);
 }
 
+static void
+vring_used_idx_set(vqueue_t *vq, uint16_t val)
+{
+    vring_t *vring = (vring_t *)vq;
+    uint64_t pa = vring->used + offsetof(vring_used_t, idx);
+    write_nommu(NULL, pa, 2, val, 0);
+}
+
 void
 vring_used_write(vqueue_t *vq, vq_request_t *req)
 {
@@ -135,4 +160,5 @@ vring_used_write(vqueue_t *vq, vq_request_t *req)
     write_nommu(NULL, pa + 4, 4, req->in_len, 0);
 
     vq->used_idx++;
+    vring_used_idx_set(vq, vq->used_idx);
 }

@@ -53,8 +53,13 @@ plic_signal(uint32_t id)
     uint32_t index;
     uint32_t offset;
 
+    if (id == 0)
+        panic("%s: interrupt number cannot be 0\n", __func__);
+
     _bit_pos(id, &index, &offset);
     plic->pending[index] |= (1 << offset);
+
+    printf("%s: id(0x%x) (%u, %u)\n", __func__, id, index, offset);
 }
 
 static void
@@ -62,6 +67,9 @@ clear_pending_bit(uint32_t id)
 {
     uint32_t index;
     uint32_t offset;
+
+    if (id == 0)
+        panic("%s: interrupt number cannot be 0\n", __func__);
 
     _bit_pos(id, &index, &offset);
     plic->pending[index] &= ~(1 << offset);
@@ -87,11 +95,19 @@ plic_read(void *dev, uint64_t addr, size_t size, params_t params)
     }
 
     if (addr == 0x200004) {
+        /* Claim */
+        if (plic->mcc == 0)
+            return 0;
+
         clear_pending_bit(plic->mcc);
         return plic->mcc;
     }
 
     if (addr == 0x201004) {
+        /* Claim */
+        if (plic->scc == 0)
+            return 0;
+
         clear_pending_bit(plic->scc);
         return plic->scc;
     }
@@ -154,6 +170,26 @@ plic_write(void *dev, uint64_t addr, uint64_t data, size_t size,
 
     if (addr == 0x201000) {
         plic->spt = (uint32_t) data;
+        return 0;
+    }
+
+    if (addr == 0x200004) {
+        /* Complete */
+        if (plic->mcc != (uint32_t) data)
+            panic("%s: bad complete (%u, %u)\n",
+                  __func__, plic->mcc, (uint32_t) data);
+
+        plic->mcc = 0;
+        return 0;
+    }
+
+    if (addr == 0x201004) {
+        /* Complete */
+        if (plic->scc != (uint32_t) data)
+            panic("%s: bad complete (%u, %u)\n",
+                  __func__, plic->scc, (uint32_t) data);
+
+        plic->scc = 0;
         return 0;
     }
 
@@ -248,5 +284,6 @@ check_interrupt()
         }
     }
 
+    printf("%s: id(0x%x)\n", __func__, ret);
     return ret;
 }

@@ -255,8 +255,10 @@ execute(address_space *as,
         new_pc = trap_enter(pc, (CAUSE_ECALL_FROM_U_MODE + priv), 0);
         break;
 
+    case URET:
+    case SRET:
     case MRET:
-        new_pc = trap_exit();
+        new_pc = trap_exit(op);
         break;
 
     case WFI:

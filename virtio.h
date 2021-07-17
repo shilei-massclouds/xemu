@@ -231,6 +231,7 @@ typedef struct _virtio_dev_t
     uint32_t    id;
 
     uint32_t    irq_num;
+    uint8_t     isr;
 
     bool        host_features_sel;
     uint64_t    guest_features;
