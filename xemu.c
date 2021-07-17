@@ -136,11 +136,7 @@ main()
             else
                 cause = CAUSE_U_EXTERNAL_INTR;
 
-            printf("%s: 1[0x%lx] intr cause(0x%lx)\n",
-                   __func__, pc, cause);
             pc = trap_enter(pc, cause, 0);
-            printf("%s: 2[0x%lx] intr cause(0x%lx)\n",
-                   __func__, pc, cause);
         }
     }
 

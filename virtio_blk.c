@@ -92,13 +92,6 @@ virtio_blk_handle_request(virtio_dev_t *vdev, vq_request_t *req)
     virtio_blk_outhdr outhdr;
     virtio_blk_t *blk = (virtio_blk_t *) vdev;
 
-    int i;
-    for (i = 0; i < req->num; i++)
-        printf("%s: desc addr(0x%lx) len(%lu) flags(0x%x)\n",
-               __func__,
-               req->iov[i].base, req->iov[i].len,
-               req->iov[i].flags);
-
     if (req->num != 3)
         panic("%s: bad request number %d\n", __func__, req->num);
 
@@ -109,10 +102,6 @@ virtio_blk_handle_request(virtio_dev_t *vdev, vq_request_t *req)
     }
 
     read_blob(req->iov[0].base, sizeof(virtio_blk_outhdr), (uint8_t *)&outhdr);
-
-    printf("%s: outhdr type(0x%x) ioprio(%u) sector(0x%lx)\n",
-           __func__,
-           outhdr.type, outhdr.ioprio, outhdr.sector);
 
     data = malloc(req->iov[1].len);
 

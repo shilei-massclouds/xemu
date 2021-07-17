@@ -110,8 +110,6 @@ vqueue_pop(vqueue_t *vq)
     if (vqueue_get_head(vq, vq->last_avail_idx++, &head) < 0)
         return NULL;
 
-    printf("%s: head %u\n", __func__, head);
-
     vring_desc_read(vq, head, &desc);
 
     if (desc.flags & VRING_DESC_F_INDIRECT) {

@@ -58,8 +58,6 @@ plic_signal(uint32_t id)
 
     _bit_pos(id, &index, &offset);
     plic->pending[index] |= (1 << offset);
-
-    printf("%s: id(0x%x) (%u, %u)\n", __func__, id, index, offset);
 }
 
 static void
@@ -85,12 +83,6 @@ plic_read(void *dev, uint64_t addr, size_t size, params_t params)
 
     if (addr >= 0x2080 && addr <= 0x2090) {
         addr = (addr - 0x2080) / 4;
-
-        /*
-        printf("%s: sie[0x%lx] => 0x%x\n",
-               __func__, addr, plic->sie[addr]);
-               */
-
         return plic->sie[addr];
     }
 
@@ -130,36 +122,18 @@ plic_write(void *dev, uint64_t addr, uint64_t data, size_t size,
     if (addr <= 0x210) {
         addr /= 4;
         plic->priority[addr] = data & 0x7;
-
-        /*
-        printf("%s: priority[0x%lx] <= 0x%x\n",
-               __func__, addr, plic->priority[addr]);
-               */
-
         return 0;
     }
 
     if (addr >= 0x2000 && addr <= 0x2010) {
         addr = (addr - 0x2000) / 4;
         plic->mie[addr] = (uint32_t) data;
-
-        /*
-        printf("%s: mie[0x%lx] <= 0x%x\n",
-               __func__, addr, plic->mie[addr]);
-               */
-
         return 0;
     }
 
     if (addr >= 0x2080 && addr <= 0x2090) {
         addr = (addr - 0x2080) / 4;
         plic->sie[addr] = (uint32_t) data;
-
-        /*
-        printf("%s: sie[0x%lx] <= 0x%x\n",
-               __func__, addr, plic->sie[addr]);
-               */
-
         return 0;
     }
 
@@ -284,6 +258,5 @@ check_interrupt()
         }
     }
 
-    printf("%s: id(0x%x)\n", __func__, ret);
     return ret;
 }
