@@ -49,4 +49,10 @@ virtio_mmio_init(address_space *parent_as, uint64_t start, uint64_t end);
 void
 virtio_set_backend(device_t *dev, void *backend);
 
+void
+plic_signal(uint32_t id);
+
+uint32_t
+check_interrupt();
+
 #endif /* DEVICE_H */

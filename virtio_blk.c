@@ -7,6 +7,7 @@
 
 #include "virtio.h"
 #include "address_space.h"
+#include "device.h"
 
 /* Feature bits */
 #define VIRTIO_BLK_F_BARRIER        0x1     /* Does host support barriers? */
@@ -130,11 +131,13 @@ virtio_blk_handle_request(virtio_dev_t *vdev, vq_request_t *req)
 
     write_nommu(NULL, req->iov[2].base, 1, VIRTIO_BLK_S_OK, 0);
 
+    plic_signal(vdev->irq_num);
+
     return 0;
 }
 
 virtio_dev_t *
-virtio_blk_init(const char *filename)
+virtio_blk_init(const char *filename, uint32_t irq_num)
 {
     virtio_blk_t *blk;
 
@@ -143,6 +146,7 @@ virtio_blk_init(const char *filename)
     blk->filename = filename;
 
     blk->vdev.id = VIRTIO_ID_BLOCK;
+    blk->vdev.irq_num = irq_num;
     blk->vdev.get_features = virtio_blk_get_features;
 
     blk->vdev.config_readb = virtio_blk_config_readb;

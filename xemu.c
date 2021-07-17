@@ -89,7 +89,7 @@ main()
                                 VIRTIO_MMIO_AS_END_0 + i * 0x1000);
 
         if (i == 0) {
-            virtio_dev_t *blk = virtio_blk_init(vda_filename);
+            virtio_dev_t *blk = virtio_blk_init(vda_filename, i + 1);
             virtio_set_backend(vdev, blk);
         }
     }
@@ -126,6 +126,22 @@ main()
         trace_execute(pc, op, rd, rs1, rs2, imm, csr_addr);
 
         pc = new_pc ? new_pc : next_pc;
+
+        if (check_interrupt()) {
+            uint64_t cause;
+            if (priv == S_MODE)
+                cause = CAUSE_S_EXTERNAL_INTR;
+            else if (priv == M_MODE)
+                cause = CAUSE_M_EXTERNAL_INTR;
+            else
+                cause = CAUSE_U_EXTERNAL_INTR;
+
+            printf("%s: 1[0x%lx] intr cause(0x%lx)\n",
+                   __func__, pc, cause);
+            pc = trap_enter(pc, cause, 0);
+            printf("%s: 2[0x%lx] intr cause(0x%lx)\n",
+                   __func__, pc, cause);
+        }
     }
 
     return 0;
