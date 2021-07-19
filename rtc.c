@@ -19,7 +19,7 @@ typedef struct _rtc_t
 static uint64_t
 rtc_read(void *dev, uint64_t addr, size_t size, params_t params)
 {
-    fprintf(stderr, "%s: need to be implemented!\n", __func__);
+    printf("### %s: need to be implemented!\n", __func__);
     return 0;
 }
 
@@ -27,7 +27,7 @@ static uint64_t
 rtc_write(void *dev, uint64_t addr, uint64_t data, size_t size,
            params_t params)
 {
-    fprintf(stderr, "%s: need to be implemented!\n", __func__);
+    printf("### %s: need to be implemented!\n", __func__);
     return 0;
 }
 

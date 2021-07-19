@@ -134,11 +134,9 @@ virtio_mmio_write(void *dev, uint64_t addr, uint64_t data, size_t size,
         break;
 
     case VIRTIO_MMIO_QUEUE_NOTIFY:
-        while((req = vqueue_pop(vdev->vq))) {
+        printf("VIRTIO_MMIO_QUEUE_NOTIFY\n");
+        while((req = vqueue_pop(vdev->vq)))
             vdev->handle_request(vdev, req);
-            vdev->isr |= 0x1;
-            plic_signal(vdev->irq_num);
-        }
         break;
 
     case VIRTIO_MMIO_INTERRUPT_ACK:

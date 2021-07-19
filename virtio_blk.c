@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 #include <malloc.h>
+#include <pthread.h>
 
 #include "virtio.h"
 #include "address_space.h"
@@ -54,6 +55,11 @@ typedef struct _virtio_blk_t
 {
     virtio_dev_t vdev;
 
+    pthread_mutex_t _mutex;
+    pthread_cond_t _cond;
+
+    vq_request_t *_req;
+
     const char *filename;
 } virtio_blk_t;
 
@@ -85,12 +91,11 @@ virtio_blk_get_features()
 }
 
 static int
-virtio_blk_handle_request(virtio_dev_t *vdev, vq_request_t *req)
+_do_request(virtio_blk_t *blk, vq_request_t *req)
 {
     FILE *fp;
     uint8_t *data;
     virtio_blk_outhdr outhdr;
-    virtio_blk_t *blk = (virtio_blk_t *) vdev;
 
     if (req->num != 3)
         panic("%s: bad request number %d\n", __func__, req->num);
@@ -120,13 +125,60 @@ virtio_blk_handle_request(virtio_dev_t *vdev, vq_request_t *req)
 
     write_nommu(NULL, req->iov[2].base, 1, VIRTIO_BLK_S_OK, 0);
 
-    vring_used_write(vdev->vq, req);
+    vring_used_write(blk->vdev.vq, req);
+
+    blk->vdev.isr |= 0x1;
+    plic_signal(blk->vdev.irq_num);
+
+    return 0;
+}
+
+static void *
+_routine(void *arg)
+{
+    virtio_blk_t *blk = (virtio_blk_t *) arg;
+
+    while (1) {
+        vq_request_t *req = NULL;
+
+        pthread_mutex_lock(&blk->_mutex);
+
+        while (blk->_req == NULL)
+            pthread_cond_wait(&blk->_cond, &blk->_mutex);
+
+        req = blk->_req;
+        blk->_req = NULL;
+
+        pthread_mutex_unlock(&blk->_mutex);
+
+        _do_request(blk, req);
+    }
+
+    return NULL;
+}
+
+static int
+virtio_blk_handle_request(virtio_dev_t *vdev, vq_request_t *req)
+{
+    virtio_blk_t *blk = (virtio_blk_t *) vdev;
+
+    pthread_mutex_lock(&blk->_mutex);
+
+    if (blk->_req)
+        panic("%s: _req already exists\n", __func__);
+
+    blk->_req = req;
+
+    pthread_mutex_unlock(&blk->_mutex);
+    pthread_cond_signal(&blk->_cond);
+
     return 0;
 }
 
 virtio_dev_t *
 virtio_blk_init(const char *filename, uint32_t irq_num)
 {
+    pthread_t tid;
     virtio_blk_t *blk;
 
     blk = calloc(1, sizeof(virtio_blk_t));
@@ -157,6 +209,11 @@ virtio_blk_init(const char *filename, uint32_t irq_num)
 
     blk->vdev.vq = calloc(1, sizeof(vqueue_t));
     blk->vdev.num_queues = 1;
+
+    pthread_mutex_init(&blk->_mutex, NULL);
+    pthread_cond_init(&blk->_cond, NULL);
+
+    pthread_create(&tid, NULL, _routine, blk);
 
     return (virtio_dev_t *) blk;
 }

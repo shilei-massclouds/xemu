@@ -6,7 +6,7 @@
 
 CC = gcc
 CFLAGS = -Wall
-LDFLAGS =
+LDFLAGS = -lpthread
 
 INC = -I./
 
@@ -21,7 +21,7 @@ all:$(TARGET)
 	$(CC) $(CFLAGS) $(INC) -o $@ -c $<
 
 $(TARGET):$(OBJS) $(HEADERS)
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
 	rm -rf $(TARGET) $(OBJS)
