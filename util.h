@@ -74,4 +74,20 @@ get_clock(void);
 int64_t
 get_clock_realtime(void);
 
+static inline int64_t
+cpu_get_host_ticks(void)
+{
+    int64_t ret;
+    uint32_t low;
+    uint32_t high;
+
+    asm volatile("rdtsc" : "=a"(low), "=d"(high));
+
+    ret = high;
+    ret <<= 32;
+    ret |= low;
+
+    return ret;
+}
+
 #endif /* UTIL_H */

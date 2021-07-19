@@ -178,6 +178,10 @@
 #define PMPADDR14   0x3be
 #define PMPADDR15   0x3bf
 
+#define CYCLE       0xc00
+#define TIME        0xc01
+#define INSTRET     0xc02
+
 #define MVENDORID   0xf11
 #define MARCHID     0xf12
 #define MIMPID      0xf13

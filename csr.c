@@ -69,6 +69,20 @@ csr_name(uint32_t csr_addr)
     return "";
 }
 
+static uint64_t
+_read(uint32_t addr)
+{
+    switch (addr)
+    {
+    case TIME:
+        return cpu_get_host_ticks();
+    default:
+        return _csr[addr];
+    }
+
+    return 0;
+}
+
 uint64_t
 csr_update(uint32_t addr, uint64_t data, csr_op_type type)
 {
@@ -77,7 +91,7 @@ csr_update(uint32_t addr, uint64_t data, csr_op_type type)
     if (addr >= 4096)
         panic("%s: bad addr 0x%x\n", addr);
 
-    ret = _csr[addr];
+    ret = _read(addr);
 
     switch (type)
     {
@@ -103,5 +117,5 @@ csr_read(uint32_t addr)
     if (addr >= 4096)
         panic("%s: bad addr 0x%x\n", addr);
 
-    return _csr[addr];
+    return _read(addr);
 }
