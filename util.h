@@ -68,4 +68,10 @@ static inline int ctz32(uint32_t val)
     return val ? __builtin_ctz(val) : 32;
 }
 
+int64_t
+get_clock(void);
+
+int64_t
+get_clock_realtime(void);
+
 #endif /* UTIL_H */

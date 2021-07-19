@@ -3,6 +3,7 @@
  */
 
 #include <malloc.h>
+#include <util.h>
 
 #include "address_space.h"
 #include "device.h"
@@ -10,16 +11,56 @@
 #define RTC_ADDRESS_SPACE_START 0x0000000000101000
 #define RTC_ADDRESS_SPACE_END   0x0000000000101FFF
 
+#define RTC_TIME_LOW            0x00
+#define RTC_TIME_HIGH           0x04
+#define RTC_ALARM_LOW           0x08
+#define RTC_ALARM_HIGH          0x0c
+#define RTC_IRQ_ENABLED         0x10
+#define RTC_CLEAR_ALARM         0x14
+#define RTC_ALARM_STATUS        0x18
+#define RTC_CLEAR_INTERRUPT     0x1c
+
+
 typedef struct _rtc_t
 {
     device_t dev;
+
+    uint64_t alarm_next;
+    uint32_t alarm_running;
 } rtc_t;
 
 
 static uint64_t
 rtc_read(void *dev, uint64_t addr, size_t size, params_t params)
 {
-    printf("### %s: need to be implemented!\n", __func__);
+    uint64_t dword = 0;
+    uint32_t high = 0;
+    rtc_t *rtc = (rtc_t *) dev;
+
+    switch (addr)
+    {
+    case RTC_TIME_LOW:
+        dword = get_clock_realtime();
+        high = dword >> 32;
+        return dword & 0xFFFFFFFF;
+
+    case RTC_TIME_HIGH:
+        return high;
+
+    case RTC_ALARM_LOW:
+        return rtc->alarm_next & 0xFFFFFFFF;
+
+    case RTC_ALARM_HIGH:
+        return rtc->alarm_next >> 32;
+
+    case RTC_ALARM_STATUS:
+        return rtc->alarm_running;
+
+    default:
+        panic("%s: need to be implemented! 0x%lx, %lu\n",
+              __func__, addr, size);
+    }
+
     return 0;
 }
 
@@ -27,7 +68,9 @@ static uint64_t
 rtc_write(void *dev, uint64_t addr, uint64_t data, size_t size,
            params_t params)
 {
-    printf("### %s: need to be implemented!\n", __func__);
+    panic("%s: need to be implemented! 0x%lx, %lu\n",
+          __func__, addr, size);
+
     return 0;
 }
 
