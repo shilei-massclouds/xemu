@@ -268,35 +268,29 @@ execute(address_space *as,
         break;
 
     case CSRRW:
-        rd_val = csr[csr_addr];
-        csr[csr_addr] = reg[rs1];
+        rd_val = csr_update(csr_addr, reg[rs1], CSR_OP_WRITE);
         if (csr_addr == 0)
             fprintf(stderr, "#DEBUG:[%lx]: %lx\n", pc, reg[rs1]);
         break;
 
     case CSRRS:
-        rd_val = csr[csr_addr];
-        csr[csr_addr] = rd_val | reg[rs1];
+        rd_val = csr_update(csr_addr, reg[rs1], CSR_OP_SET);
         break;
 
     case CSRRC:
-        rd_val = csr[csr_addr];
-        csr[csr_addr] = rd_val & ~reg[rs1];
+        rd_val = csr_update(csr_addr, reg[rs1], CSR_OP_CLEAR);
         break;
 
     case CSRRWI:
-        rd_val = csr[csr_addr];
-        csr[csr_addr] = imm;
+        rd_val = csr_update(csr_addr, imm, CSR_OP_WRITE);
         break;
 
     case CSRRSI:
-        rd_val = csr[csr_addr];
-        csr[csr_addr] = rd_val | imm;
+        rd_val = csr_update(csr_addr, imm, CSR_OP_SET);
         break;
 
     case CSRRCI:
-        rd_val = csr[csr_addr];
-        csr[csr_addr] = rd_val & ~imm;
+        rd_val = csr_update(csr_addr, imm, CSR_OP_CLEAR);
         break;
 
     case MUL:

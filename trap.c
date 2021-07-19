@@ -12,37 +12,43 @@ trap_enter(uint64_t pc, uint64_t cause, uint64_t tval)
     uint64_t medeleg = 0;
 
     if (BIT(cause, 63))
-        mideleg = BIT(csr[MIDELEG], BITS(cause, 3, 0));
+        mideleg = BIT(csr_read(MIDELEG), BITS(cause, 3, 0));
     else
-        medeleg = BIT(csr[MEDELEG], cause);
+        medeleg = BIT(csr_read(MEDELEG), cause);
 
     if (mideleg || medeleg) {
         /* Handle trap in S_MODE */
         uint64_t mode_bit = (priv == U_MODE) ? 0UL : 1UL;
-        SET_BIT(csr[SSTATUS], MS_SPP, mode_bit);
+        uint64_t sstatus = csr_read(SSTATUS);
+        SET_BIT(sstatus, MS_SPP, mode_bit);
         priv = S_MODE;
 
-        csr[SCAUSE] = cause;
-        csr[STVAL] = tval;
+        csr_update(SCAUSE, cause, CSR_OP_WRITE);
+        csr_update(STVAL, tval, CSR_OP_WRITE);
 
-        SET_BIT(csr[SSTATUS], MS_SPIE, BIT(csr[SSTATUS], MS_SIE));
-        SET_BIT(csr[SSTATUS], MS_SIE, 0UL);
+        SET_BIT(sstatus, MS_SPIE, BIT(sstatus, MS_SIE));
+        SET_BIT(sstatus, MS_SIE, 0UL);
 
-        csr[SEPC] = pc;
-        ret = csr[STVEC];
+        csr_update(SSTATUS, sstatus, CSR_OP_WRITE);
+
+        csr_update(SEPC, pc, CSR_OP_WRITE);
+        ret = csr_read(STVEC);
     } else {
         /* Handle trap in M_MODE. MS_MPP at [12,11]. */
-        SET_BITS(csr[MSTATUS], 12, 11, priv);
+        uint64_t mstatus = csr_read(MSTATUS);
+        SET_BITS(mstatus, 12, 11, priv);
         priv = M_MODE;
 
-        csr[MCAUSE] = cause;
-        csr[MTVAL] = tval;
+        csr_update(MCAUSE, cause, CSR_OP_WRITE);
+        csr_update(MTVAL, tval, CSR_OP_WRITE);
 
-        SET_BIT(csr[MSTATUS], MS_MPIE, BIT(csr[MSTATUS], MS_MIE));
-        SET_BIT(csr[MSTATUS], MS_MIE, 0UL);
+        SET_BIT(mstatus, MS_MPIE, BIT(mstatus, MS_MIE));
+        SET_BIT(mstatus, MS_MIE, 0UL);
 
-        csr[MEPC] = pc;
-        ret = csr[MTVEC];
+        csr_update(MSTATUS, mstatus, CSR_OP_WRITE);
+
+        csr_update(MEPC, pc, CSR_OP_WRITE);
+        ret = csr_read(MTVEC);
     }
 
     return ret;
@@ -52,19 +58,25 @@ uint64_t
 trap_exit(op_t op)
 {
     uint64_t ret;
+    uint64_t sstatus;
+    uint64_t mstatus;
 
     switch (op)
     {
     case SRET:
-        priv = BIT(csr[SSTATUS], MS_SPP) ? S_MODE : U_MODE;
-        SET_BIT(csr[SSTATUS], MS_SIE, BIT(csr[SSTATUS], MS_SPIE));
-        ret = csr[SEPC];
+        sstatus = csr_read(SSTATUS);
+        priv = BIT(sstatus, MS_SPP) ? S_MODE : U_MODE;
+        SET_BIT(sstatus, MS_SIE, BIT(sstatus, MS_SPIE));
+        csr_update(SSTATUS, sstatus, CSR_OP_WRITE);
+        ret = csr_read(SEPC);
         break;
 
     case MRET:
-        priv = BITS(csr[MSTATUS], 12, 11);
-        SET_BIT(csr[MSTATUS], MS_MIE, BIT(csr[MSTATUS], MS_MPIE));
-        ret = csr[MEPC];
+        mstatus = csr_read(MSTATUS);
+        priv = BITS(mstatus, 12, 11);
+        SET_BIT(mstatus, MS_MIE, BIT(mstatus, MS_MPIE));
+        csr_update(MSTATUS, mstatus, CSR_OP_WRITE);
+        ret = csr_read(MEPC);
         break;
 
     default:

@@ -188,12 +188,24 @@
 #define M_MODE  3
 
 extern uint8_t  priv;
-extern uint64_t csr[4096];
+
+typedef enum _csr_op_type
+{
+    CSR_OP_WRITE = 0,
+    CSR_OP_SET,
+    CSR_OP_CLEAR,
+} csr_op_type;
 
 void
 csr_init();
 
 const char *
 csr_name(uint32_t csr_addr);
+
+uint64_t
+csr_update(uint32_t addr, uint64_t data, csr_op_type type);
+
+uint64_t
+csr_read(uint32_t addr);
 
 #endif /* CSR_H */

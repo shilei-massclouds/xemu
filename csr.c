@@ -6,12 +6,12 @@
 #include "util.h"
 
 uint8_t priv = M_MODE;
-uint64_t csr[4096] = {0};
+uint64_t _csr[4096] = {0};
 
 void
 csr_init()
 {
-    csr[MISA] = MISA_INIT_VAL;
+    _csr[MISA] = MISA_INIT_VAL;
 }
 
 const char *
@@ -64,8 +64,44 @@ csr_name(uint32_t csr_addr)
         return "mhartid";
     default:
         return "unknown";
-        //panic("%s: bad csr address 0x%x\n", __func__, csr_addr);
     }
 
     return "";
+}
+
+uint64_t
+csr_update(uint32_t addr, uint64_t data, csr_op_type type)
+{
+    uint64_t ret;
+
+    if (addr >= 4096)
+        panic("%s: bad addr 0x%x\n", addr);
+
+    ret = _csr[addr];
+
+    switch (type)
+    {
+    case CSR_OP_WRITE:
+        _csr[addr] = data;
+        break;
+    case CSR_OP_SET:
+        _csr[addr] = ret | data;
+        break;
+    case CSR_OP_CLEAR:
+        _csr[addr] = ret & ~data;
+        break;
+    default:
+        panic("%s: bad csr op %d\n", __func__, type);
+    }
+
+    return ret;
+}
+
+uint64_t
+csr_read(uint32_t addr)
+{
+    if (addr >= 4096)
+        panic("%s: bad addr 0x%x\n", addr);
+
+    return _csr[addr];
 }

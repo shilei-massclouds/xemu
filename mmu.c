@@ -20,10 +20,10 @@ mmu(address_space *as, uint64_t vaddr, int *except)
     uint64_t root_ppn;
     uint64_t paddr;
 
-    if ((priv != S_MODE) || (BITS(csr[SATP], 63, 60) == 0))
+    if ((priv != S_MODE) || (BITS(csr_read(SATP), 63, 60) == 0))
         return vaddr;
 
-    root_ppn = BITS(csr[SATP], 43, 0);
+    root_ppn = BITS(csr_read(SATP), 43, 0);
 
     /* Level-2 */
     paddr = (root_ppn << 12) | (BITS(vaddr, 38, 30) << 3);

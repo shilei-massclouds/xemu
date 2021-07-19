@@ -210,13 +210,21 @@ first_one(uint32_t bits)
     return 0;
 }
 
+static void
+_set_pending_bit(uint32_t dst, uint32_t src, uint32_t index)
+{
+    uint64_t data = csr_read(dst);
+    SET_BIT(data, index, BIT(csr_read(src), index));
+    csr_update(dst, data, CSR_OP_WRITE);
+}
+
 uint32_t
 check_interrupt()
 {
     int i;
     uint32_t ret = 0;
 
-    bool deleg = BIT(csr[MIDELEG], 9);
+    bool deleg = BIT(csr_read(MIDELEG), 9);
     uint32_t *xie = deleg ? plic->sie : plic->mie;
     uint32_t xpt = deleg ? plic->spt : plic->mpt;
     uint32_t *xcc = deleg ? &plic->scc : &plic->mcc;
@@ -237,22 +245,22 @@ check_interrupt()
         return 0;
 
     if (deleg) {
-        if (BIT(csr[SSTATUS], MS_SIE)) {
+        if (BIT(csr_read(SSTATUS), MS_SIE)) {
             if (priv == S_MODE)
-                SET_BIT(csr[SIP], 9, BIT(csr[SIE], 9));
+                _set_pending_bit(SIP, SIE, 9);
             else if (priv == U_MODE)
-                SET_BIT(csr[SIP], 8, BIT(csr[SIE], 8));
+                _set_pending_bit(SIP, SIE, 8);
         } else {
             return 0;
         }
     } else {
-        if (BIT(csr[MSTATUS], MS_MIE)) {
+        if (BIT(csr_read(MSTATUS), MS_MIE)) {
             if (priv == S_MODE)
-                SET_BIT(csr[MIP], 9, BIT(csr[SIE], 9));
+                _set_pending_bit(MIP, MIE, 9);
             else if (priv == U_MODE)
-                SET_BIT(csr[MIP], 8, BIT(csr[SIE], 8));
+                _set_pending_bit(MIP, MIE, 8);
             else if (priv == M_MODE)
-                SET_BIT(csr[MIP], 11, BIT(csr[SIE], 11));
+                _set_pending_bit(MIP, MIE, 11);
         } else {
             return 0;
         }
