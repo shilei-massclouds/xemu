@@ -36,6 +36,28 @@
 #define VIRTIO_BLK_S_IOERR  1
 #define VIRTIO_BLK_S_UNSUPP 2
 
+/* These two define direction. */
+#define VIRTIO_BLK_T_IN         0
+#define VIRTIO_BLK_T_OUT        1
+
+/* This bit says it's a scsi command, not an actual read or write. */
+#define VIRTIO_BLK_T_SCSI_CMD   2
+
+/* Cache flush command */
+#define VIRTIO_BLK_T_FLUSH      4
+
+/* Get device ID command */
+#define VIRTIO_BLK_T_GET_ID     8
+
+/* Discard command */
+#define VIRTIO_BLK_T_DISCARD    11
+
+/* Write zeroes command */
+#define VIRTIO_BLK_T_WRITE_ZEROES   13
+
+/* Barrier before this op. */
+#define VIRTIO_BLK_T_BARRIER    0x80000000
+
 
 /*
  * This comes first in the read scatter-gather list.
@@ -90,29 +112,35 @@ virtio_blk_get_features()
     return (features | VIRTIO_BLK_FEATURES);
 }
 
+static void
+_complete(virtio_blk_t *blk, vq_request_t *req)
+{
+    printf("%s: index(%d) in_len(%d) num(%d)\n",
+           __func__, req->index, req->in_len, req->num);
+
+    write_nommu(NULL, req->iov[req->num-1].base, 1, VIRTIO_BLK_S_OK, 0);
+
+    vring_used_write(blk->vdev.vq, req);
+
+    blk->vdev.isr |= 0x1;
+    plic_signal(blk->vdev.irq_num);
+}
+
 static int
-_do_request(virtio_blk_t *blk, vq_request_t *req)
+_handle_read(virtio_blk_t *blk, vq_request_t *req, uint64_t sector)
 {
     FILE *fp;
     uint8_t *data;
-    virtio_blk_outhdr outhdr;
-
-    if (req->num != 3)
-        panic("%s: bad request number %d\n", __func__, req->num);
-
-    /* Request head */
-    if ((req->iov[0].len != sizeof(virtio_blk_outhdr)) ||
-        !(req->iov[0].flags & IO_VEC_F_READ)) {
-        panic("%s: bad out header\n", __func__);
-    }
-
-    read_blob(req->iov[0].base, sizeof(virtio_blk_outhdr), (uint8_t *)&outhdr);
 
     data = malloc(req->iov[1].len);
 
     fp = fopen(blk->filename, "rb");
     if (fp == NULL)
         panic("%s: cannot open file %s\n", __func__, blk->filename);
+
+    if (fseek(fp, sector * 512, SEEK_SET) < 0)
+        panic("%s: cannot seek sector(%u) of file %s\n",
+              __func__, sector, blk->filename);
 
     if (fread(data, 1, req->iov[1].len, fp) != req->iov[1].len)
         panic("%s: cannot read file %s\n", __func__, blk->filename);
@@ -123,12 +151,78 @@ _do_request(virtio_blk_t *blk, vq_request_t *req)
 
     free(data);
 
-    write_nommu(NULL, req->iov[2].base, 1, VIRTIO_BLK_S_OK, 0);
+    _complete(blk, req);
 
-    vring_used_write(blk->vdev.vq, req);
+    return 0;
+}
 
-    blk->vdev.isr |= 0x1;
-    plic_signal(blk->vdev.irq_num);
+static int
+_handle_write(virtio_blk_t *blk, vq_request_t *req, uint64_t sector)
+{
+    FILE *fp;
+    uint8_t *data;
+
+    data = malloc(req->iov[1].len);
+    read_blob(req->iov[1].base, req->iov[1].len, data);
+
+    fp = fopen(blk->filename, "r+b");
+    if (fp == NULL)
+        panic("%s: cannot open file %s\n", __func__, blk->filename);
+
+    if (fseek(fp, sector * 512, SEEK_SET) < 0)
+        panic("%s: cannot seek sector(%u) of file %s\n",
+              __func__, sector, blk->filename);
+
+    if (fwrite(data, 1, req->iov[1].len, fp) != req->iov[1].len)
+        panic("%s: cannot write file %s\n", __func__, blk->filename);
+
+    fclose(fp);
+    free(data);
+
+    _complete(blk, req);
+
+    return 0;
+}
+
+static int
+_handle_flush(virtio_blk_t *blk, vq_request_t *req)
+{
+    printf("%s: (%lx, %lx)\n", __func__, req->iov[1].base, req->iov[1].len);
+    _complete(blk, req);
+    return 0;
+}
+
+static int
+_do_request(virtio_blk_t *blk, vq_request_t *req)
+{
+    virtio_blk_outhdr outhdr;
+
+    if (req->num < 2)
+        panic("%s: bad request number %d\n", __func__, req->num);
+
+    /* Request head */
+    if ((req->iov[0].len != sizeof(virtio_blk_outhdr)) ||
+        !(req->iov[0].flags & IO_VEC_F_READ)) {
+        panic("%s: bad out header\n", __func__);
+    }
+
+    read_blob(req->iov[0].base, sizeof(virtio_blk_outhdr), (uint8_t *)&outhdr);
+    printf("outhdr(%u,%u,%lu)\n", outhdr.type, outhdr.ioprio, outhdr.sector);
+
+    switch (outhdr.type & ~(VIRTIO_BLK_T_OUT | VIRTIO_BLK_T_BARRIER))
+    {
+    case VIRTIO_BLK_T_IN:
+        if (outhdr.type & VIRTIO_BLK_T_OUT)
+            return _handle_write(blk, req, outhdr.sector);
+        else
+            return _handle_read(blk, req, outhdr.sector);
+
+    case VIRTIO_BLK_T_FLUSH:
+        return _handle_flush(blk, req);
+
+    default:
+        panic("%s: bad out type (%u)\n", __func__, outhdr.type);
+    }
 
     return 0;
 }
