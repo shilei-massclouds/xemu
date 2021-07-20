@@ -98,8 +98,28 @@ vring_desc_read_indirect(uint32_t head, uint64_t addr, uint32_t len)
     return req;
 }
 
+static inline bool
+virtio_has_feature(uint64_t features, uint32_t fbit)
+{
+    return !!(features & fbit);
+}
+
+static inline bool
+virtio_dev_has_feature(virtio_dev_t *vdev, uint32_t fbit)
+{
+    return virtio_has_feature(vdev->guest_features, fbit);
+}
+
+static inline void
+vring_set_avail_event(vqueue_t *vq, uint16_t val)
+{
+    vring_t *vring = (vring_t *)vq;
+    uint64_t pa = vring->used + offsetof(vring_used_t, ring[vq->vring.num]);
+    write_nommu(NULL, pa, 2, val, 0);
+}
+
 vq_request_t *
-vqueue_pop(vqueue_t *vq)
+vqueue_pop(virtio_dev_t *vdev, vqueue_t *vq)
 {
     uint32_t head;
     vring_desc_t desc;
@@ -109,6 +129,9 @@ vqueue_pop(vqueue_t *vq)
 
     if (vqueue_get_head(vq, vq->last_avail_idx++, &head) < 0)
         return NULL;
+
+    if (virtio_dev_has_feature(vdev, VIRTIO_RING_F_EVENT_IDX))
+        vring_set_avail_event(vq, vq->last_avail_idx);
 
     vring_desc_read(vq, head, &desc);
 

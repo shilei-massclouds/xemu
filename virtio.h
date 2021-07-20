@@ -266,7 +266,7 @@ vring_align(uint64_t addr, uint64_t align)
 }
 
 vq_request_t *
-vqueue_pop(vqueue_t *vq);
+vqueue_pop(virtio_dev_t *vdev, vqueue_t *vq);
 
 void
 vring_init(vring_t *vring, uint64_t pfn, uint32_t page_shift);
