@@ -68,6 +68,25 @@ static inline int ctz32(uint32_t val)
     return val ? __builtin_ctz(val) : 32;
 }
 
+static inline int
+get_file_size(const char *filename, uint64_t *psize)
+{
+    int size;
+    FILE *fp = fopen(filename, "rb");
+    if (fp == NULL)
+        return -1;
+
+    fseek(fp, 0, SEEK_END);
+    size = ftell(fp);
+    fclose(fp);
+
+    if (size < 0)
+        return -1;
+
+    *psize = size;
+    return 0;
+}
+
 int64_t
 get_clock(void);
 

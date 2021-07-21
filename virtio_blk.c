@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <malloc.h>
 #include <pthread.h>
+#include <string.h>
 
 #include "virtio.h"
 #include "address_space.h"
@@ -58,6 +59,9 @@
 /* Barrier before this op. */
 #define VIRTIO_BLK_T_BARRIER    0x80000000
 
+#define VIRTIO_BLK_QUEUE_SIZE 256
+#define VIRTIO_BLK_BLOCK_SIZE 512
+
 
 /*
  * This comes first in the read scatter-gather list.
@@ -85,6 +89,117 @@ typedef struct _virtio_blk_t
     const char *filename;
 } virtio_blk_t;
 
+typedef struct _virtio_blk_config_t
+{
+    /* The capacity (in 512-byte sectors). */
+    uint64_t capacity;
+    /* The maximum segment size (if VIRTIO_BLK_F_SIZE_MAX) */
+    uint32_t size_max;
+    /* The maximum number of segments (if VIRTIO_BLK_F_SEG_MAX) */
+    uint32_t seg_max;
+    /* geometry of the device (if VIRTIO_BLK_F_GEOMETRY) */
+    struct virtio_blk_geometry {
+        uint16_t cylinders;
+        uint8_t heads;
+        uint8_t sectors;
+    } geometry;
+
+    /* block size of device (if VIRTIO_BLK_F_BLK_SIZE) */
+    uint32_t blk_size;
+
+    /* the next 4 entries are guarded by VIRTIO_BLK_F_TOPOLOGY  */
+    /* exponent for physical block per logical block. */
+    uint8_t physical_block_exp;
+    /* alignment offset in logical blocks. */
+    uint8_t alignment_offset;
+    /* minimum I/O size without performance penalty in logical blocks. */
+    uint16_t min_io_size;
+    /* optimal sustained I/O size in logical blocks. */
+    uint32_t opt_io_size;
+
+    /* writeback mode (if VIRTIO_BLK_F_CONFIG_WCE) */
+    uint8_t wce;
+    uint8_t unused;
+
+    /* number of vqs, only available when VIRTIO_BLK_F_MQ is set */
+    uint16_t num_queues;
+
+    /* the next 3 entries are guarded by VIRTIO_BLK_F_DISCARD */
+    /*
+     * The maximum discard sectors (in 512-byte sectors) for
+     * one segment.
+     */
+    uint32_t max_discard_sectors;
+    /*
+     * The maximum number of discard segments in a
+     * discard command.
+     */
+    uint32_t max_discard_seg;
+    /* Discard commands must be aligned to this number of sectors. */
+    uint32_t discard_sector_alignment;
+
+    /* the next 3 entries are guarded by VIRTIO_BLK_F_WRITE_ZEROES */
+    /*
+     * The maximum number of write zeroes sectors (in 512-byte sectors) in
+     * one segment.
+     */
+    uint32_t max_write_zeroes_sectors;
+    /*
+     * The maximum number of segments in a write zeroes
+     * command.
+     */
+    uint32_t max_write_zeroes_seg;
+    /*
+     * Set if a VIRTIO_BLK_T_WRITE_ZEROES request may result in the
+     * deallocation of one or more of the sectors.
+     */
+    uint8_t write_zeroes_may_unmap;
+
+    uint8_t unused1[3];
+} __attribute__((packed)) virtio_blk_config_t;
+
+
+static void
+virtio_blk_init_config(virtio_blk_t *blk)
+{
+    uint64_t size;
+    virtio_blk_config_t config;
+
+    if (sizeof(virtio_blk_config_t) > 256)
+        panic("%s: virtio_blk_config_t is too large\n", __func__);
+
+    memset(&config, 0, sizeof(config));
+
+    if (get_file_size(blk->filename, &size) < 0)
+        panic("%s: get file (%s) size error\n", __func__, blk->filename);
+
+    config.capacity = size >> 9;
+    config.size_max = 0;
+    config.seg_max = VIRTIO_BLK_QUEUE_SIZE - 2;
+
+    config.geometry.cylinders = 0;
+    config.geometry.heads = 0;
+    config.geometry.sectors = 0;
+
+    config.blk_size = VIRTIO_BLK_BLOCK_SIZE;
+    config.physical_block_exp = 0;
+    config.alignment_offset = 0;
+
+    config.min_io_size = 0;
+    config.opt_io_size = 0;
+    config.wce = 1;
+
+    config.num_queues = 0;
+    config.max_discard_sectors = 0x3FFFFF;
+    config.max_discard_seg = 1;
+
+    config.discard_sector_alignment = 1;
+    config.max_write_zeroes_sectors = 0x3FFFFF;
+    config.max_write_zeroes_seg = 0;
+    config.write_zeroes_may_unmap = 0;
+
+    memcpy(blk->vdev.config, (uint8_t *) &config, sizeof(config));
+}
 
 static uint32_t
 virtio_blk_config_readb(virtio_dev_t *dev, uint32_t addr)
@@ -288,18 +403,7 @@ virtio_blk_init(const char *filename, uint32_t irq_num)
 
     blk->vdev.handle_request = virtio_blk_handle_request;
 
-    blk->vdev.config[0x01] = 0x08;
-    blk->vdev.config[0x0c] = 0xFE;
-    blk->vdev.config[0x15] = 0x02;
-    blk->vdev.config[0x20] = 0x01;
-    blk->vdev.config[0x24] = 0xFF;
-    blk->vdev.config[0x25] = 0xFF;
-    blk->vdev.config[0x26] = 0x3F;
-    blk->vdev.config[0x28] = 0x01;
-    blk->vdev.config[0x2c] = 0x01;
-    blk->vdev.config[0x30] = 0xFF;
-    blk->vdev.config[0x31] = 0xFF;
-    blk->vdev.config[0x32] = 0x3F;
+    virtio_blk_init_config(blk);
 
     blk->vdev.vq = calloc(1, sizeof(vqueue_t));
     blk->vdev.num_queues = 1;
