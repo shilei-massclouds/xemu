@@ -2,6 +2,7 @@
  * Execute
  */
 
+#include "types.h"
 #include "execute.h"
 
 #include "regfile.h"
@@ -23,6 +24,8 @@ execute(address_space *as,
     uint64_t addr;
     uint64_t new_pc = 0;
     uint64_t rd_val;
+    double   frd_val;
+    bool     is_fp = false;
     int except = 0;
 
     switch (op)
@@ -453,11 +456,27 @@ execute(address_space *as,
         rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_MAXU, &except);
         break;
 
+    /* Floating-point instructions */
+
+    case FLW:
+        addr = reg[rs1] + imm;
+        frd_val = (float)read(as, addr, 4, 0, &except);
+        is_fp = true;
+        break;
+
+    case FLD:
+        addr = reg[rs1] + imm;
+        frd_val = (double)read(as, addr, 8, 0, &except);
+        is_fp = true;
+        break;
+
     default:
         panic("%s: bad op (%s) at: %x\n", __func__, op_name(op), pc);
     }
 
-    if (rd)
+    if (is_fp)
+        freg[rd] = frd_val;
+    else if (rd)
         reg[rd] = rd_val;
 
     return new_pc;

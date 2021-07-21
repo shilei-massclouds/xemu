@@ -115,7 +115,7 @@ main()
         }
 
         /* Decode */
-        next_pc = pc + decode(inst, &op, &rd, &rs1, &rs2, &imm, &csr_addr);
+        next_pc = decode(pc, inst, &op, &rd, &rs1, &rs2, &imm, &csr_addr);
 
         trace_decode(pc, op, rd, rs1, rs2, imm, csr_addr);
 

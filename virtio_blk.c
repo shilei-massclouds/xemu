@@ -230,9 +230,6 @@ virtio_blk_get_features()
 static void
 _complete(virtio_blk_t *blk, vq_request_t *req)
 {
-    printf("%s: index(%d) in_len(%d) num(%d)\n",
-           __func__, req->index, req->in_len, req->num);
-
     write_nommu(NULL, req->iov[req->num-1].base, 1, VIRTIO_BLK_S_OK, 0);
 
     vring_used_write(blk->vdev.vq, req);
@@ -244,10 +241,22 @@ _complete(virtio_blk_t *blk, vq_request_t *req)
 static int
 _handle_read(virtio_blk_t *blk, vq_request_t *req, uint64_t sector)
 {
+    int i;
     FILE *fp;
     uint8_t *data;
 
-    data = malloc(req->iov[1].len);
+    if (req->num == 5) {
+        printf("%lx %lx\n", req->iov[1].base, req->iov[1].len);
+        printf("%lx %lx\n", req->iov[2].base, req->iov[2].len);
+        printf("%lx %lx\n", req->iov[3].base, req->iov[3].len);
+    }
+
+    if (req->num < 3) {
+        panic("%s: bad request number %d\n", __func__, req->num);
+    }
+
+    printf("%s: sector (%lu, %lu)\n",
+           __func__, sector, req->iov[1].len);
 
     fp = fopen(blk->filename, "rb");
     if (fp == NULL)
@@ -257,14 +266,17 @@ _handle_read(virtio_blk_t *blk, vq_request_t *req, uint64_t sector)
         panic("%s: cannot seek sector(%u) of file %s\n",
               __func__, sector, blk->filename);
 
-    if (fread(data, 1, req->iov[1].len, fp) != req->iov[1].len)
-        panic("%s: cannot read file %s\n", __func__, blk->filename);
+    for (i = 1; i < (req->num - 1); i++) {
+        data = malloc(req->iov[i].len);
+
+        if (fread(data, 1, req->iov[i].len, fp) != req->iov[i].len)
+            panic("%s: cannot read file %s\n", __func__, blk->filename);
+
+        write_blob(req->iov[i].base, req->iov[i].len, data);
+        free(data);
+    }
 
     fclose(fp);
-
-    write_blob(req->iov[1].base, req->iov[1].len, data);
-
-    free(data);
 
     _complete(blk, req);
 
@@ -276,6 +288,9 @@ _handle_write(virtio_blk_t *blk, vq_request_t *req, uint64_t sector)
 {
     FILE *fp;
     uint8_t *data;
+
+    if (req->num != 3)
+        panic("%s: bad request number %d\n", __func__, req->num);
 
     data = malloc(req->iov[1].len);
     read_blob(req->iov[1].base, req->iov[1].len, data);
@@ -302,7 +317,9 @@ _handle_write(virtio_blk_t *blk, vq_request_t *req, uint64_t sector)
 static int
 _handle_flush(virtio_blk_t *blk, vq_request_t *req)
 {
-    printf("%s: (%lx, %lx)\n", __func__, req->iov[1].base, req->iov[1].len);
+    if (req->num != 2)
+        panic("%s: bad request number %d\n", __func__, req->num);
+
     _complete(blk, req);
     return 0;
 }
@@ -312,9 +329,6 @@ _do_request(virtio_blk_t *blk, vq_request_t *req)
 {
     virtio_blk_outhdr outhdr;
 
-    if (req->num < 2)
-        panic("%s: bad request number %d\n", __func__, req->num);
-
     /* Request head */
     if ((req->iov[0].len != sizeof(virtio_blk_outhdr)) ||
         !(req->iov[0].flags & IO_VEC_F_READ)) {
@@ -322,7 +336,6 @@ _do_request(virtio_blk_t *blk, vq_request_t *req)
     }
 
     read_blob(req->iov[0].base, sizeof(virtio_blk_outhdr), (uint8_t *)&outhdr);
-    printf("outhdr(%u,%u,%lu)\n", outhdr.type, outhdr.ioprio, outhdr.sector);
 
     switch (outhdr.type & ~(VIRTIO_BLK_T_OUT | VIRTIO_BLK_T_BARRIER))
     {

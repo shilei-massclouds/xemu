@@ -34,7 +34,8 @@
 
 
 void
-dec32(uint32_t  inst,
+dec32(uint64_t  pc,
+      uint32_t  inst,
       op_t      *op,
       uint32_t  *rd,
       uint32_t  *rs1,
@@ -157,6 +158,22 @@ dec32(uint32_t  inst,
 
         *imm = S_IMM(inst);
         *rd = 0;
+        break;
+
+    case OP_LOAD_FP:
+        switch (funct3)
+        {
+        case 2:
+            *op = FLW;
+            break;
+        case 3:
+            *op = FLD;
+            break;
+        default:
+            panic("%s: bad load-fp instruction (0x%x)\n", __func__, inst);
+        }
+
+        *imm = I_IMM(inst);
         break;
 
     case OP_IMM:
@@ -447,6 +464,7 @@ dec32(uint32_t  inst,
         break;
 
     default:
-        panic("%s: bad instruction (0x%x)", __func__, inst);
+        panic("%s: bad instruction (0x%x) at (0x%lx)\n",
+              __func__, inst, pc);
     }
 }

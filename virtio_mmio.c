@@ -134,7 +134,6 @@ virtio_mmio_write(void *dev, uint64_t addr, uint64_t data, size_t size,
         break;
 
     case VIRTIO_MMIO_QUEUE_NOTIFY:
-        printf("VIRTIO_MMIO_QUEUE_NOTIFY\n");
         while((req = vqueue_pop(vdev, vdev->vq)))
             vdev->handle_request(vdev, req);
         break;

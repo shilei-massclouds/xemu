@@ -7,6 +7,7 @@
 
 #define OP_NOP      0x00
 #define OP_LOAD     0x03
+#define OP_LOAD_FP  0x07
 #define OP_MISC     0x0F
 #define OP_IMM      0x13
 #define OP_AUIPC    0x17

@@ -6,7 +6,6 @@
 #define _TYPES_H_
 
 #include <stdint.h>
-
-typedef _Bool   bool;
+#include <stdbool.h>
 
 #endif  /* _TYPES_H_ */

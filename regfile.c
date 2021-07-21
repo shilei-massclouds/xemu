@@ -5,6 +5,7 @@
 #include "regfile.h"
 
 uint64_t reg[32] = {0};
+uint64_t freg[32] = {0};
 
 const char* _abi_names[32] = {
     "zero",                                                 /* 0 */

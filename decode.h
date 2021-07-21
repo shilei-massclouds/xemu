@@ -10,7 +10,8 @@
 #include "operation.h"
 
 uint64_t
-decode(uint32_t  inst,
+decode(uint64_t  pc,
+       uint32_t  inst,
        op_t      *op,
        uint32_t  *rd,
        uint32_t  *rs1,
@@ -19,7 +20,8 @@ decode(uint32_t  inst,
        uint32_t  *csr_addr);
 
 void
-dec32(uint32_t  inst,
+dec32(uint64_t  pc,
+      uint32_t  inst,
       op_t      *op,
       uint32_t  *rd,
       uint32_t  *rs1,
@@ -28,7 +30,8 @@ dec32(uint32_t  inst,
       uint32_t  *csr_addr);
 
 void
-dec16(uint16_t  inst,
+dec16(uint64_t  pc,
+      uint16_t  inst,
       op_t      *op,
       uint32_t  *rd,
       uint32_t  *rs1,

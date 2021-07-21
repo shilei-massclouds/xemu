@@ -62,7 +62,8 @@
 
 
 void
-dec16(uint16_t  inst,
+dec16(uint64_t  pc,
+      uint16_t  inst,
       op_t      *op,
       uint32_t  *rd,
       uint32_t  *rs1,
@@ -91,6 +92,14 @@ dec16(uint16_t  inst,
             *rd = 8 + BITS(inst, 4, 2);
             *rs1 = 2;   /* sp */
             *imm = N_IMM(inst);
+            break;
+
+        case 1:
+            /* c.fld */
+            *op = FLD;
+            *rd = 8 + BITS(inst, 4, 2);
+            *rs1 = 8 + BITS(inst, 9, 7);
+            *imm = U_IMM_D(inst);
             break;
 
         case 2:
@@ -345,12 +354,13 @@ dec16(uint16_t  inst,
             break;
 
         default:
-            panic("%s: bad instruction (0x%x)", __func__, inst);
+            panic("%s: bad instruction (0x%x)\n", __func__, inst);
         }
 
         break;
 
     default:
-        panic("%s: bad instruction (0x%x)", __func__, inst);
+        panic("%s: bad instruction (0x%x) at (0x%lx)\n",
+              __func__, inst, pc);
     }
 }
