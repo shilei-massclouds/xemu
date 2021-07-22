@@ -25,24 +25,32 @@ extern address_space root_as;
 
 const char *vda_filename = "./image/test.raw";
 
-uint32_t
-fetch(address_space *as, uint64_t pc, int *except)
+uint64_t
+fetch(address_space *as, uint64_t pc, uint32_t *inst)
 {
     uint32_t lo;
     uint32_t hi;
 
-    if ((pc + 2) & (PAGE_SIZE - 1UL))
-        return read(as, pc, 4, 0, except);
+    bool has_except = false;
 
-    lo = read(as, pc, 2, 0, except);
-    if (*except)
+    if ((pc + 2) & (PAGE_SIZE - 1UL)) {
+        *inst = read(as, pc, 4, 0, &has_except);
+        if (has_except)
+            return trap_enter(pc, CAUSE_INST_PAGE_FAULT, pc);
+
         return 0;
+    }
 
-    hi = read(as, pc + 2, 2, 0, except);
-    if (*except)
-        return 0;
+    lo = read(as, pc, 2, 0, &has_except);
+    if (has_except)
+        return trap_enter(pc, CAUSE_INST_PAGE_FAULT, pc);
 
-    return ((hi << 16) | lo);
+    hi = read(as, pc + 2, 2, 0, &has_except);
+    if (has_except)
+        return trap_enter(pc, CAUSE_INST_PAGE_FAULT, pc);
+
+    *inst = ((hi << 16) | lo);
+    return 0;
 }
 
 int
@@ -51,7 +59,6 @@ main()
     int i;
     device_t *rom;
     device_t *flash;
-    uint32_t inst;
     uint64_t pc = 0x1000;
 
     printf("[XEMU startup ...]\n");
@@ -95,22 +102,22 @@ main()
     }
 
     while (1) {
-        uint64_t next_pc;
-        uint64_t new_pc;
-
         op_t      op;
         uint32_t  rd;
         uint32_t  rs1;
         uint32_t  rs2;
         uint64_t  imm;
         uint32_t  csr_addr;
-        int except = 0;
+
+        uint64_t next_pc = 0;
+        uint64_t new_pc = 0;
+        uint32_t inst = 0;
 
         /* Fetch */
-        inst = fetch(&root_as, pc, &except);
-
-        if (except) {
-            pc = trap_enter(pc, CAUSE_INST_PAGE_FAULT, pc);
+        next_pc = fetch(&root_as, pc, &inst);
+        if (next_pc) {
+            /* An except occurs during fetch */
+            pc = next_pc;
             continue;
         }
 
@@ -125,7 +132,12 @@ main()
 
         trace_execute(pc, op, rd, rs1, rs2, imm, csr_addr);
 
-        pc = new_pc ? new_pc : next_pc;
+        if (new_pc) {
+            pc = new_pc;
+            continue;
+        }
+
+        pc = next_pc;
 
         if (check_interrupt()) {
             uint64_t cause;

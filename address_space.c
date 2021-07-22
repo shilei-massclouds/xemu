@@ -73,11 +73,14 @@ read_nommu(address_space *as, uint64_t addr, size_t size, params_t params)
 
 uint64_t
 read(address_space *as, uint64_t vaddr, size_t size, params_t params,
-     int *except)
+     bool *has_except)
 {
-    uint64_t paddr = mmu(as, vaddr, except);
-    if (*except)
+    uint64_t paddr;
+
+    if (mmu(as, vaddr, &paddr) < 0) {
+        *has_except = true;
         return 0;
+    }
 
     return read_nommu(as, paddr, size, params);
 }
@@ -109,11 +112,14 @@ write_nommu(address_space *as, uint64_t addr, size_t size, uint64_t data,
 
 uint64_t
 write(address_space *as, uint64_t vaddr, size_t size, uint64_t data,
-      params_t params, int *except)
+      params_t params, bool *has_except)
 {
-    uint64_t paddr = mmu(as, vaddr, except);
-    if (*except)
+    uint64_t paddr;
+
+    if (mmu(as, vaddr, &paddr) < 0) {
+        *has_except = true;
         return 0;
+    }
 
     return write_nommu(as, paddr, size, data, params);
 }

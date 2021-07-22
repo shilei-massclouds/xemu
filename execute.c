@@ -22,11 +22,12 @@ execute(address_space *as,
         uint32_t csr_addr)
 {
     uint64_t addr;
-    uint64_t new_pc = 0;
     uint64_t rd_val;
     double   frd_val;
     bool     is_fp = false;
-    int except = 0;
+    uint64_t ret_pc = 0;
+
+    bool has_except = false;
 
     switch (op)
     {
@@ -43,97 +44,97 @@ execute(address_space *as,
 
     case JAL:
         rd_val = next_pc;
-        new_pc = pc + imm;
+        ret_pc = pc + imm;
         break;
 
     case JALR:
         rd_val = next_pc;
-        new_pc = reg[rs1] + imm;
+        ret_pc = reg[rs1] + imm;
         break;
 
     case BEQ:
         if (reg[rs1] == reg[rs2])
-            new_pc = pc + imm;
+            ret_pc = pc + imm;
         break;
 
     case BNE:
         if (reg[rs1] != reg[rs2])
-            new_pc = pc + imm;
+            ret_pc = pc + imm;
         break;
 
     case BLT:
         if ((int64_t)reg[rs1] < (int64_t)reg[rs2])
-            new_pc = pc + imm;
+            ret_pc = pc + imm;
         break;
 
     case BGE:
         if ((int64_t)reg[rs1] >= (int64_t)reg[rs2])
-            new_pc = pc + imm;
+            ret_pc = pc + imm;
         break;
 
     case BLTU:
         if (reg[rs1] < reg[rs2])
-            new_pc = pc + imm;
+            ret_pc = pc + imm;
         break;
 
     case BGEU:
         if (reg[rs1] >= reg[rs2])
-            new_pc = pc + imm;
+            ret_pc = pc + imm;
         break;
 
     case LB:
         addr = reg[rs1] + imm;
-        rd_val = (int8_t)read(as, addr, 1, 0, &except);
+        rd_val = (int8_t)read(as, addr, 1, 0, &has_except);
         break;
 
     case LH:
         addr = reg[rs1] + imm;
-        rd_val = (int16_t)read(as, addr, 2, 0, &except);
+        rd_val = (int16_t)read(as, addr, 2, 0, &has_except);
         break;
 
     case LW:
         addr = reg[rs1] + imm;
-        rd_val = (int32_t)read(as, addr, 4, 0, &except);
+        rd_val = (int32_t)read(as, addr, 4, 0, &has_except);
         break;
 
     case LD:
         addr = reg[rs1] + imm;
-        rd_val = read(as, addr, 8, 0, &except);
+        rd_val = read(as, addr, 8, 0, &has_except);
         break;
 
     case LBU:
         addr = reg[rs1] + imm;
-        rd_val = (uint8_t)read(as, addr, 1, 0, &except);
+        rd_val = (uint8_t)read(as, addr, 1, 0, &has_except);
         break;
 
     case LHU:
         addr = reg[rs1] + imm;
-        rd_val = (uint16_t)read(as, addr, 2, 0, &except);
+        rd_val = (uint16_t)read(as, addr, 2, 0, &has_except);
         break;
 
     case LWU:
         addr = reg[rs1] + imm;
-        rd_val = (uint32_t)read(as, addr, 4, 0, &except);
+        rd_val = (uint32_t)read(as, addr, 4, 0, &has_except);
         break;
 
     case SB:
         addr = reg[rs1] + imm;
-        write(as, addr, 1, reg[rs2], 0, &except);
+        write(as, addr, 1, reg[rs2], 0, &has_except);
         break;
 
     case SH:
         addr = reg[rs1] + imm;
-        write(as, addr, 2, reg[rs2], 0, &except);
+        write(as, addr, 2, reg[rs2], 0, &has_except);
         break;
 
     case SW:
         addr = reg[rs1] + imm;
-        write(as, addr, 4, reg[rs2], 0, &except);
+        write(as, addr, 4, reg[rs2], 0, &has_except);
         break;
 
     case SD:
         addr = reg[rs1] + imm;
-        write(as, addr, 8, reg[rs2], 0, &except);
+        write(as, addr, 8, reg[rs2], 0, &has_except);
         break;
 
     case ADDI:
@@ -255,13 +256,13 @@ execute(address_space *as,
         break;
 
     case ECALL:
-        new_pc = trap_enter(pc, (CAUSE_ECALL_FROM_U_MODE + priv), 0);
+        ret_pc = trap_enter(pc, (CAUSE_ECALL_FROM_U_MODE + priv), 0);
         break;
 
     case URET:
     case SRET:
     case MRET:
-        new_pc = trap_exit(op);
+        ret_pc = trap_exit(op);
         break;
 
     case WFI:
@@ -389,84 +390,84 @@ execute(address_space *as,
         break;
 
     case LR_D:
-        rd_val = read(as, reg[rs1], 8, PARAMS_LR_SC, &except);
+        rd_val = read(as, reg[rs1], 8, PARAMS_LR_SC, &has_except);
         break;
     case SC_D:
-        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_LR_SC, &except);
+        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_LR_SC, &has_except);
         break;
     case AMO_ADD_D:
-        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_ADD, &except);
+        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_ADD, &has_except);
         break;
     case AMO_SWAP_D:
-        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_SWAP, &except);
+        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_SWAP, &has_except);
         break;
     case AMO_XOR_D:
-        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_XOR, &except);
+        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_XOR, &has_except);
         break;
     case AMO_OR_D:
-        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_OR, &except);
+        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_OR, &has_except);
         break;
     case AMO_AND_D:
-        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_AND, &except);
+        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_AND, &has_except);
         break;
     case AMO_MIN_D:
-        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_MIN, &except);
+        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_MIN, &has_except);
         break;
     case AMO_MAX_D:
-        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_MAX, &except);
+        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_MAX, &has_except);
         break;
     case AMO_MINU_D:
-        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_MINU, &except);
+        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_MINU, &has_except);
         break;
     case AMO_MAXU_D:
-        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_MAXU, &except);
+        rd_val = write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_MAXU, &has_except);
         break;
 
     case LR_W:
-        rd_val = (int32_t)read(as, reg[rs1], 4, PARAMS_LR_SC, &except);
+        rd_val = (int32_t)read(as, reg[rs1], 4, PARAMS_LR_SC, &has_except);
         break;
     case SC_W:
-        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_LR_SC, &except);
+        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_LR_SC, &has_except);
         break;
     case AMO_ADD_W:
-        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_ADD, &except);
+        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_ADD, &has_except);
         break;
     case AMO_SWAP_W:
-        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_SWAP, &except);
+        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_SWAP, &has_except);
         break;
     case AMO_XOR_W:
-        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_XOR, &except);
+        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_XOR, &has_except);
         break;
     case AMO_OR_W:
-        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_OR, &except);
+        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_OR, &has_except);
         break;
     case AMO_AND_W:
-        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_AND, &except);
+        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_AND, &has_except);
         break;
     case AMO_MIN_W:
-        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_MIN, &except);
+        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_MIN, &has_except);
         break;
     case AMO_MAX_W:
-        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_MAX, &except);
+        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_MAX, &has_except);
         break;
     case AMO_MINU_W:
-        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_MINU, &except);
+        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_MINU, &has_except);
         break;
     case AMO_MAXU_W:
-        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_MAXU, &except);
+        rd_val = write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_MAXU, &has_except);
         break;
 
     /* Floating-point instructions */
 
     case FLW:
         addr = reg[rs1] + imm;
-        frd_val = (float)read(as, addr, 4, 0, &except);
+        frd_val = (float)read(as, addr, 4, 0, &has_except);
         is_fp = true;
         break;
 
     case FLD:
         addr = reg[rs1] + imm;
-        frd_val = (double)read(as, addr, 8, 0, &except);
+        frd_val = (double)read(as, addr, 8, 0, &has_except);
         is_fp = true;
         break;
 
@@ -474,10 +475,13 @@ execute(address_space *as,
         panic("%s: bad op (%s) at: %x\n", __func__, op_name(op), pc);
     }
 
+    if (has_except)
+        panic("%s: find except op (%s) at: %x\n", __func__, op_name(op), pc);
+
     if (is_fp)
         freg[rd] = frd_val;
     else if (rd)
         reg[rd] = rd_val;
 
-    return new_pc;
+    return ret_pc;
 }

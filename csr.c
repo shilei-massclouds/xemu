@@ -72,6 +72,14 @@ csr_name(uint32_t csr_addr)
 static uint64_t
 _read(uint32_t addr)
 {
+    /*
+    if (addr > PMPCFG2 && addr < PMPADDR0)
+        panic("%s: illegal inst!\n", __func__);
+
+    if (addr > PMPADDR15 && addr <= 0x400)
+        panic("%s: illegal inst!\n", __func__);
+    */
+
     switch (addr)
     {
     case CYCLE:

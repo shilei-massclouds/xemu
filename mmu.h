@@ -9,7 +9,7 @@
 
 #include "address_space.h"
 
-uint64_t
-mmu(address_space *as, uint64_t vaddr, int *except);
+int
+mmu(address_space *as, uint64_t vaddr, uint64_t *paddr);
 
 #endif /* MMU_H */

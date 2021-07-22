@@ -6,8 +6,8 @@
 #define ADDRESS_SPACE_H
 
 #include <stdio.h>
-#include <stdint.h>
 
+#include "types.h"
 
 /* Sv39 for riscv64 */
 #define ROOT_ADDRESS_SPACE_START 0x0000000000000000
@@ -67,11 +67,11 @@ write_nommu(address_space *as, uint64_t addr,
 
 uint64_t
 read(address_space *as, uint64_t vaddr, size_t size,
-     params_t params, int *except);
+     params_t params, bool *has_except);
 
 uint64_t
 write(address_space *as, uint64_t vaddr, size_t size, uint64_t data,
-      params_t params, int *except);
+      params_t params, bool *has_except);
 
 void
 read_blob(uint64_t addr, size_t size, uint8_t *data);
