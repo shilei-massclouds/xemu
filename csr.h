@@ -5,7 +5,8 @@
 #ifndef CSR_H
 #define CSR_H
 
-#include <stdint.h>
+#include "types.h"
+
 
 // 63:62 MXL (10: XLEN = 64)
 #define MISA_MXL_64 0x8000000000000000
@@ -207,9 +208,9 @@ const char *
 csr_name(uint32_t csr_addr);
 
 uint64_t
-csr_update(uint32_t addr, uint64_t data, csr_op_type type);
+csr_update(uint32_t addr, uint64_t data, csr_op_type type, bool *has_except);
 
 uint64_t
-csr_read(uint32_t addr);
+csr_read(uint32_t addr, bool *has_except);
 
 #endif /* CSR_H */

@@ -18,15 +18,16 @@ mmu(address_space *as, uint64_t vaddr, uint64_t *paddr)
 {
     uint64_t pte;
     uint64_t root_ppn;
+    bool has_except = false;
 
     *paddr = 0;
 
-    if ((priv != S_MODE) || (BITS(csr_read(SATP), 63, 60) == 0)) {
+    if ((priv != S_MODE) || (BITS(csr_read(SATP, &has_except), 63, 60) == 0)) {
         *paddr = vaddr;
         return 0;
     }
 
-    root_ppn = BITS(csr_read(SATP), 43, 0);
+    root_ppn = BITS(csr_read(SATP, &has_except), 43, 0);
 
     /* Level-2 */
     *paddr = (root_ppn << 12) | (BITS(vaddr, 38, 30) << 3);

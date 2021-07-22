@@ -272,29 +272,42 @@ execute(address_space *as,
         break;
 
     case CSRRW:
-        rd_val = csr_update(csr_addr, reg[rs1], CSR_OP_WRITE);
+        rd_val = csr_update(csr_addr, reg[rs1], CSR_OP_WRITE, &has_except);
+        if (has_except)
+            ret_pc = trap_enter(pc, CAUSE_ILLEGAL_INST, 0);
+
         if (csr_addr == 0)
             fprintf(stderr, "#DEBUG:[%lx]: %lx\n", pc, reg[rs1]);
         break;
 
     case CSRRS:
-        rd_val = csr_update(csr_addr, reg[rs1], CSR_OP_SET);
+        rd_val = csr_update(csr_addr, reg[rs1], CSR_OP_SET, &has_except);
+        if (has_except)
+            ret_pc = trap_enter(pc, CAUSE_ILLEGAL_INST, 0);
         break;
 
     case CSRRC:
-        rd_val = csr_update(csr_addr, reg[rs1], CSR_OP_CLEAR);
+        rd_val = csr_update(csr_addr, reg[rs1], CSR_OP_CLEAR, &has_except);
+        if (has_except)
+            ret_pc = trap_enter(pc, CAUSE_ILLEGAL_INST, 0);
         break;
 
     case CSRRWI:
-        rd_val = csr_update(csr_addr, imm, CSR_OP_WRITE);
+        rd_val = csr_update(csr_addr, imm, CSR_OP_WRITE, &has_except);
+        if (has_except)
+            ret_pc = trap_enter(pc, CAUSE_ILLEGAL_INST, 0);
         break;
 
     case CSRRSI:
-        rd_val = csr_update(csr_addr, imm, CSR_OP_SET);
+        rd_val = csr_update(csr_addr, imm, CSR_OP_SET, &has_except);
+        if (has_except)
+            ret_pc = trap_enter(pc, CAUSE_ILLEGAL_INST, 0);
         break;
 
     case CSRRCI:
-        rd_val = csr_update(csr_addr, imm, CSR_OP_CLEAR);
+        rd_val = csr_update(csr_addr, imm, CSR_OP_CLEAR, &has_except);
+        if (has_except)
+            ret_pc = trap_enter(pc, CAUSE_ILLEGAL_INST, 0);
         break;
 
     case MUL:
@@ -474,9 +487,6 @@ execute(address_space *as,
     default:
         panic("%s: bad op (%s) at: %x\n", __func__, op_name(op), pc);
     }
-
-    if (has_except)
-        panic("%s: find except op (%s) at: %x\n", __func__, op_name(op), pc);
 
     if (is_fp)
         freg[rd] = frd_val;

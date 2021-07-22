@@ -70,15 +70,17 @@ csr_name(uint32_t csr_addr)
 }
 
 static uint64_t
-_read(uint32_t addr)
+_read(uint32_t addr, bool *has_except)
 {
     /*
     if (addr > PMPCFG2 && addr < PMPADDR0)
         panic("%s: illegal inst!\n", __func__);
-
-    if (addr > PMPADDR15 && addr <= 0x400)
-        panic("%s: illegal inst!\n", __func__);
     */
+
+    if (addr > PMPADDR15 && addr <= 0x400) {
+        *has_except = true;
+        return 0;
+    }
 
     switch (addr)
     {
@@ -96,14 +98,16 @@ _read(uint32_t addr)
 }
 
 uint64_t
-csr_update(uint32_t addr, uint64_t data, csr_op_type type)
+csr_update(uint32_t addr, uint64_t data, csr_op_type type, bool *has_except)
 {
     uint64_t ret;
 
     if (addr >= 4096)
         panic("%s: bad addr 0x%x\n", addr);
 
-    ret = _read(addr);
+    ret = _read(addr, has_except);
+    if (*has_except)
+        return 0;
 
     switch (type)
     {
@@ -124,10 +128,10 @@ csr_update(uint32_t addr, uint64_t data, csr_op_type type)
 }
 
 uint64_t
-csr_read(uint32_t addr)
+csr_read(uint32_t addr, bool *has_except)
 {
     if (addr >= 4096)
         panic("%s: bad addr 0x%x\n", addr);
 
-    return _read(addr);
+    return _read(addr, has_except);
 }
