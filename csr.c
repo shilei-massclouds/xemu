@@ -74,7 +74,11 @@ _read(uint32_t addr)
 {
     switch (addr)
     {
+    case CYCLE:
+        return cpu_get_host_ticks();
     case TIME:
+        return cpu_get_host_ticks();
+    case INSTRET:
         return cpu_get_host_ticks();
     default:
         return _csr[addr];
