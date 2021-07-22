@@ -25,6 +25,7 @@ typedef struct _rtc_t
 {
     device_t dev;
 
+    uint32_t time_high;
     uint64_t alarm_next;
     uint32_t alarm_running;
 } rtc_t;
@@ -34,18 +35,17 @@ static uint64_t
 rtc_read(void *dev, uint64_t addr, size_t size, params_t params)
 {
     uint64_t dword = 0;
-    uint32_t high = 0;
     rtc_t *rtc = (rtc_t *) dev;
 
     switch (addr)
     {
     case RTC_TIME_LOW:
         dword = get_clock_realtime();
-        high = dword >> 32;
+        rtc->time_high = dword >> 32;
         return dword & 0xFFFFFFFF;
 
     case RTC_TIME_HIGH:
-        return high;
+        return rtc->time_high;
 
     case RTC_ALARM_LOW:
         return rtc->alarm_next & 0xFFFFFFFF;
@@ -68,8 +68,8 @@ static uint64_t
 rtc_write(void *dev, uint64_t addr, uint64_t data, size_t size,
            params_t params)
 {
-    panic("%s: need to be implemented! 0x%lx, %lu\n",
-          __func__, addr, size);
+    panic("%s: need to be implemented! [0x%lx]: 0x%lx (%lu)\n",
+          __func__, addr, data, size);
 
     return 0;
 }
