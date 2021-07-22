@@ -54,7 +54,7 @@ main()
     uint32_t inst;
     uint64_t pc = 0x1000;
 
-    fprintf(stderr, "XEMU startup ...\n");
+    printf("[XEMU startup ...]\n");
 
     /* Init root address space */
     init_address_space(&root_as,

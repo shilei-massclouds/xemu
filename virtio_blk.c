@@ -245,18 +245,9 @@ _handle_read(virtio_blk_t *blk, vq_request_t *req, uint64_t sector)
     FILE *fp;
     uint8_t *data;
 
-    if (req->num == 5) {
-        printf("%lx %lx\n", req->iov[1].base, req->iov[1].len);
-        printf("%lx %lx\n", req->iov[2].base, req->iov[2].len);
-        printf("%lx %lx\n", req->iov[3].base, req->iov[3].len);
-    }
-
     if (req->num < 3) {
         panic("%s: bad request number %d\n", __func__, req->num);
     }
-
-    printf("%s: sector (%lu, %lu)\n",
-           __func__, sector, req->iov[1].len);
 
     fp = fopen(blk->filename, "rb");
     if (fp == NULL)

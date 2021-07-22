@@ -120,7 +120,7 @@ rom_add_file(device_t *dev, const char *filename, size_t base)
 
     fclose(fp);
 
-    fprintf(stderr, "%s: add file %s\n", __func__, filename);
+    printf("%s: add file %s\n", __func__, filename);
 
     /* Recode file-size into (base - 8) */
     if (base) {
