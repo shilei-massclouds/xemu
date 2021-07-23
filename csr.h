@@ -162,6 +162,7 @@
 
 #define PMPCFG0     0x3a0
 #define PMPCFG2     0x3a2
+
 #define PMPADDR0    0x3b0
 #define PMPADDR1    0x3b1
 #define PMPADDR2    0x3b2
@@ -178,6 +179,9 @@
 #define PMPADDR13   0x3bd
 #define PMPADDR14   0x3be
 #define PMPADDR15   0x3bf
+
+#define MHPMCOUNTER3    0xb03
+#define MHPMCOUNTER31   0xb1f
 
 #define CYCLE       0xc00
 #define TIME        0xc01

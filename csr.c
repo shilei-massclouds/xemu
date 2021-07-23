@@ -72,26 +72,81 @@ csr_name(uint32_t csr_addr)
 static uint64_t
 _read(uint32_t addr, bool *has_except)
 {
-    /*
-    if (addr > PMPCFG2 && addr < PMPADDR0)
-        panic("%s: illegal inst!\n", __func__);
-    */
-
-    if (addr > PMPADDR15 && addr <= 0x400) {
-        *has_except = true;
-        return 0;
-    }
-
     switch (addr)
     {
+
+    /* 0x100 */
+    case SSTATUS:
+    /* 0x102 ~ 0x106 */
+    case SEDELEG:
+    case SIDELEG:
+    case SIE:
+    case STVEC:
+        return _csr[addr];
+
+    case SCOUNTEREN:
+        return 0x7; /* Only support cycle, time and instret */
+
+    /* 0x140 ~ 0x144 */
+    case SSCRATCH:
+    case SEPC:
+    case SCAUSE:
+    case STVAL:
+    case SIP:
+        return _csr[addr];
+
+    /* 0x180 */
+    case SATP:
+        return _csr[addr];
+
+    /* 0x300 ~ 0x306 */
+    case MSTATUS:
+    case MISA:
+    case MEDELEG:
+    case MIDELEG:
+    case MIE:
+    case MTVEC:
+        return _csr[addr];
+
+    case MCOUNTEREN:
+        return 0x7; /* Only support cycle, time and instret */
+
+    /* 0x340 ~ 0x344 */
+    case MSCRATCH:
+    case MEPC:
+    case MCAUSE:
+    case MTVAL:
+    case MIP:
+        return _csr[addr];
+
+    /* 0x3a0 */
+    case PMPCFG0:
+        return _csr[addr];
+
+    /* 0x3a2 */
+    case PMPCFG2:
+        return _csr[addr];
+
+    /* 0x3b0 ~ 0x3bf */
+    case PMPADDR0...PMPADDR15:
+        return _csr[addr];
+
+    /* 0xc00 ~ 0xc02 */
     case CYCLE:
-        return cpu_get_host_ticks();
     case TIME:
-        return cpu_get_host_ticks();
     case INSTRET:
         return cpu_get_host_ticks();
-    default:
+
+    /* 0xf11 ~ 0xf14 */
+    case MVENDORID:
+    case MARCHID:
+    case MIMPID:
+    case MHARTID:
         return _csr[addr];
+
+    default:
+        fprintf(stderr, "%s: bad addr 0x%x\n", __func__, addr);
+        *has_except = true;
     }
 
     return 0;
@@ -103,7 +158,7 @@ csr_update(uint32_t addr, uint64_t data, csr_op_type type, bool *has_except)
     uint64_t ret;
 
     if (addr >= 4096)
-        panic("%s: bad addr 0x%x\n", addr);
+        panic("%s: bad addr 0x%x\n", __func__, addr);
 
     ret = _read(addr, has_except);
     if (*has_except)
@@ -131,7 +186,7 @@ uint64_t
 csr_read(uint32_t addr, bool *has_except)
 {
     if (addr >= 4096)
-        panic("%s: bad addr 0x%x\n", addr);
+        panic("%s: bad addr 0x%x\n", __func__, addr);
 
     return _read(addr, has_except);
 }

@@ -276,8 +276,10 @@ execute(address_space *as,
         if (has_except)
             ret_pc = trap_enter(pc, CAUSE_ILLEGAL_INST, 0);
 
+        /*
         if (csr_addr == 0)
             fprintf(stderr, "#DEBUG:[%lx]: %lx\n", pc, reg[rs1]);
+        */
         break;
 
     case CSRRS:
