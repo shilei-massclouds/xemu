@@ -43,7 +43,7 @@ const char *op_names[] = {
     "AMO_XOR_W", "AMO_OR_W", "AMO_AND_W",
     "AMO_MIN_W", "AMO_MAX_W", "AMO_MINU_W", "AMO_MAXU_W",
 
-    "FLW",
+    "FLW", "FMV_W_X",
 
     "FLD",
 };

@@ -92,7 +92,9 @@
 #define MISA_A 0x0000000000000001
 
 #define MISA_INIT_VAL \
-    (MISA_MXL_64 | MISA_U | MISA_S | MISA_M | MISA_I | MISA_C | MISA_A)
+    (MISA_MXL_64 | MISA_U | MISA_S | \
+     MISA_F | MISA_D | \
+     MISA_M | MISA_I | MISA_C | MISA_A)
 
 /* [M|S]STATUS bits */
 #define MS_UIE      0
@@ -130,6 +132,8 @@
 
 /* CSR Number */
 #define USTATUS     0x000
+
+#define FCSR        0x003
 
 #define SSTATUS     0x100
 #define SEDELEG     0x102

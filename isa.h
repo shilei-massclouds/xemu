@@ -17,6 +17,7 @@
 #define OP_REG      0x33
 #define OP_LUI      0x37
 #define OP_REG_W    0x3B
+#define OP_FP       0x53
 #define OP_BRANCH   0x63
 #define OP_JALR     0x67
 #define OP_JAL      0x6F

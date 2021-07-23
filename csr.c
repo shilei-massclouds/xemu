@@ -21,6 +21,8 @@ csr_name(uint32_t csr_addr)
     {
     case USTATUS:
         return "ustatus";
+    case FCSR:
+        return "fcsr";
     case STVEC:
         return "stvec";
     case SSCRATCH:
@@ -74,6 +76,9 @@ _read(uint32_t addr, bool *has_except)
 {
     switch (addr)
     {
+    /* 0x003 */
+    case FCSR:
+        return _csr[addr];
 
     /* 0x100 */
     case SSTATUS:

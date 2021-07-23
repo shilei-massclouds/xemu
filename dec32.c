@@ -458,7 +458,19 @@ dec32(uint64_t  pc,
             *op = (funct3 == 3) ? AMO_MAXU_D : AMO_MAXU_W;
             break;
         default:
-            panic("%s: bad system instruction (0x%x)", __func__, inst);
+            panic("%s: bad system instruction (0x%x)\n", __func__, inst);
+        }
+
+        break;
+
+    case OP_FP:
+        switch (funct7)
+        {
+        case 0x78:
+            *op = FMV_W_X;
+            break;
+        default:
+            panic("%s: bad fp instruction (0x%x)\n", __func__, inst);
         }
 
         break;

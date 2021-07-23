@@ -24,7 +24,7 @@ execute(address_space *as,
     uint64_t addr;
     uint64_t rd_val;
     double   frd_val;
-    bool     is_fp = false;
+    bool     is_frd = false;
     uint64_t ret_pc = 0;
 
     bool has_except = false;
@@ -477,20 +477,25 @@ execute(address_space *as,
     case FLW:
         addr = reg[rs1] + imm;
         frd_val = (float)read(as, addr, 4, 0, &has_except);
-        is_fp = true;
+        is_frd = true;
+        break;
+
+    case FMV_W_X:
+        frd_val = (float) reg[rs1];
+        is_frd = true;
         break;
 
     case FLD:
         addr = reg[rs1] + imm;
         frd_val = (double)read(as, addr, 8, 0, &has_except);
-        is_fp = true;
+        is_frd = true;
         break;
 
     default:
         panic("%s: bad op (%s) at: %x\n", __func__, op_name(op), pc);
     }
 
-    if (is_fp)
+    if (is_frd)
         freg[rd] = frd_val;
     else if (rd)
         reg[rd] = rd_val;
