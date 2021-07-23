@@ -149,9 +149,13 @@ _read(uint32_t addr, bool *has_except)
     case MHARTID:
         return _csr[addr];
 
-    default:
-        fprintf(stderr, "%s: bad addr 0x%x\n", __func__, addr);
+    case PMPADDR16...PMPADDR63:
+    case MHPMCOUNTER3...MHPMCOUNTER31:
         *has_except = true;
+        break;
+
+    default:
+        panic("%s: bad addr 0x%x\n", __func__, addr);
     }
 
     return 0;

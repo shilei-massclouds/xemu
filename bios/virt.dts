@@ -13,7 +13,7 @@
 	};
 
 	chosen {
-		bootargs = "earlycon=sbi root=/dev/vda1 rw console=ttyS0";
+		bootargs = "earlycon=sbi root=/dev/vda rw console=ttyS0";
 		stdout-path = "/soc/uart@10000000";
 	};
 

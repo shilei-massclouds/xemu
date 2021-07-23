@@ -184,6 +184,9 @@
 #define PMPADDR14   0x3be
 #define PMPADDR15   0x3bf
 
+#define PMPADDR16   0x3c0
+#define PMPADDR63   0x3ef
+
 #define MHPMCOUNTER3    0xb03
 #define MHPMCOUNTER31   0xb1f
 

@@ -22,7 +22,7 @@ mmu(address_space *as, uint64_t vaddr, uint64_t *paddr)
 
     *paddr = 0;
 
-    if ((priv != S_MODE) || (BITS(csr_read(SATP, &has_except), 63, 60) == 0)) {
+    if ((priv == M_MODE) || (BITS(csr_read(SATP, &has_except), 63, 60) == 0)) {
         *paddr = vaddr;
         return 0;
     }
