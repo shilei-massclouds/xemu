@@ -13,6 +13,7 @@
 #define OP_AUIPC    0x17
 #define OP_IMM_W    0x1B
 #define OP_STORE    0x23
+#define OP_STORE_FP 0x27
 #define OP_AMO      0x2F
 #define OP_REG      0x33
 #define OP_LUI      0x37

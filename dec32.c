@@ -176,6 +176,23 @@ dec32(uint64_t  pc,
         *imm = I_IMM(inst);
         break;
 
+    case OP_STORE_FP:
+        switch (funct3)
+        {
+        case 2:
+            *op = FSW;
+            break;
+        case 3:
+            *op = FSD;
+            break;
+        default:
+            panic("%s: bad store-fp instruction (0x%x)\n", __func__, inst);
+        }
+
+        *imm = S_IMM(inst);
+        *rd = 0;
+        break;
+
     case OP_IMM:
         switch (funct3)
         {

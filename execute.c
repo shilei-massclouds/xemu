@@ -548,6 +548,13 @@ execute(address_space *as,
         is_frd = true;
         break;
 
+    case FSW:
+        addr = reg[rs1] + imm;
+        write(as, addr, 4, (float)reg[rs2], 0, &has_except);
+        if (has_except)
+            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, addr);
+        break;
+
     case FMV_W_X:
         frd_val = (float) reg[rs1];
         is_frd = true;
@@ -559,6 +566,13 @@ execute(address_space *as,
         if (has_except)
             ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, addr);
         is_frd = true;
+        break;
+
+    case FSD:
+        addr = reg[rs1] + imm;
+        write(as, addr, 8, freg[rs2], 0, &has_except);
+        if (has_except)
+            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, addr);
         break;
 
     default:

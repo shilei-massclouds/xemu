@@ -118,6 +118,14 @@ dec16(uint64_t  pc,
             *imm = U_IMM_D(inst);
             break;
 
+        case 5:
+            /* c.fsd */
+            *op = FSD;
+            *rs1 = 8 + BITS(inst, 9, 7);
+            *rs2 = 8 + BITS(inst, 4, 2);
+            *imm = U_IMM_D(inst);
+            break;
+
         case 6:
             /* c.sw */
             *op = SW;
@@ -135,7 +143,7 @@ dec16(uint64_t  pc,
             break;
 
         default:
-            panic("%s: bad instruction (0x%x)", __func__, inst);
+            panic("%s: bad instruction (0x%x)\n", __func__, inst);
         }
 
         break;

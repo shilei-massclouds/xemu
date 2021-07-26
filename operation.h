@@ -128,9 +128,11 @@ typedef enum _op_t
     AMO_MAXU_W,
 
     FLW,
+    FSW,
     FMV_W_X,
 
     FLD,
+    FSD,
 
     OP_MAX_NUM,
 } op_t;
