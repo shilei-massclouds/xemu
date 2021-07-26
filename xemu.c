@@ -12,7 +12,6 @@
 #include "device.h"
 #include "execute.h"
 #include "csr.h"
-#include "regfile.h"
 #include "mmu.h"
 #include "trap.h"
 #include "trace.h"
