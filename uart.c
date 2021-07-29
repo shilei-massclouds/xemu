@@ -115,7 +115,6 @@ uart_write(void *dev, uint64_t addr, uint64_t data, size_t size,
         if (uart->lcr & UART_LCR_DLAB) {
             uart->divider = ((data & 0xFF) << 8) | (uart->divider & 0x00FF);
         } else {
-            printf("%s: IER (%x, %x)\n", __func__, uart->ier, (uint8_t)data);
             uart->ier = (uint8_t)data;
             if (uart->ier) {
                 if (uart->ier & UART_IER_RLSI)
