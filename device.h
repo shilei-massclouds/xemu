@@ -41,7 +41,7 @@ device_t *
 ram_init(address_space *parent_as);
 
 device_t *
-uart_init(address_space *parent_as);
+uart_init(address_space *parent_as, uint32_t irq_num);
 
 device_t *
 virtio_mmio_init(address_space *parent_as, uint64_t start, uint64_t end);

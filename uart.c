@@ -28,9 +28,22 @@
 
 #define UART_LCR_DLAB 0x80  /* DLAB enable */
 
+#define UART_IER_MSI    0x08    /* Enable Modem status interrupt */
+#define UART_IER_RLSI   0x04    /* Enable receiver line status interrupt */
+#define UART_IER_THRI   0x02    /* Enable Transmitter holding register int. */
+#define UART_IER_RDI    0x01    /* Enable receiver data interrupt */
+
+#define UART_IIR_MSI    0x00    /* Modem status interrupt */
+#define UART_IIR_THRI   0x02    /* Transmitter holding register empty */
+#define UART_IIR_RDI    0x04    /* Receiver data interrupt */
+#define UART_IIR_RLSI   0x06    /* Receiver line status interrupt */
+
+
 typedef struct _uart_t
 {
     device_t dev;
+
+    uint32_t irq_num;
 
     uint8_t rbr;
     uint8_t ier;
@@ -99,10 +112,24 @@ uart_write(void *dev, uint64_t addr, uint64_t data, size_t size,
         break;
 
     case UART_IER:  /* 1 */
-        if (uart->lcr & UART_LCR_DLAB)
+        if (uart->lcr & UART_LCR_DLAB) {
             uart->divider = ((data & 0xFF) << 8) | (uart->divider & 0x00FF);
-        else
+        } else {
+            printf("%s: IER (%x, %x)\n", __func__, uart->ier, (uint8_t)data);
             uart->ier = (uint8_t)data;
+            if (uart->ier) {
+                if (uart->ier & UART_IER_RLSI)
+                    uart->iir = UART_IIR_RLSI;
+                else if (uart->ier & UART_IER_RDI)
+                    uart->iir = UART_IIR_RDI;
+                else if (uart->ier & UART_IER_THRI)
+                    uart->iir = UART_IIR_THRI;
+                else if (uart->ier & UART_IER_MSI)
+                    uart->iir = UART_IIR_MSI;
+
+                plic_signal(uart->irq_num);
+            }
+        }
         break;
 
     case UART_IIR:  /* 2 */
@@ -133,12 +160,14 @@ uart_write(void *dev, uint64_t addr, uint64_t data, size_t size,
 }
 
 device_t *
-uart_init(address_space *parent_as)
+uart_init(address_space *parent_as, uint32_t irq_num)
 {
     uart_t *uart;
 
     uart = calloc(1, sizeof(uart_t));
     uart->dev.name = "uart";
+
+    uart->irq_num = irq_num;
 
     uart->lsr = UART_LSR_THRE | UART_LSR_TEMT;
 

@@ -86,7 +86,7 @@ main()
 
     ram_init(&root_as);
 
-    uart_init(&root_as);
+    uart_init(&root_as, 0xa);
 
     for (i = 0; i < 8; i++) {
         device_t *vdev;
