@@ -58,8 +58,17 @@ uart_read(void *dev, uint64_t addr, size_t size, params_t params)
     case UART_IER:  /* 1 */
         return uart->ier;
 
+    case UART_IIR:  /* 2 */
+        return uart->iir;
+
+    case UART_LCR:  /* 3 */
+        return uart->lcr;
+
     case UART_LSR:  /* 5 */
         return uart->lsr;
+
+    case UART_MSR:  /* 6 */
+        return uart->msr;
 
     case UART_SCR:  /* 7 */
         return uart->scr;

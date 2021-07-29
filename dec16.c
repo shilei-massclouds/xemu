@@ -297,6 +297,14 @@ dec16(uint64_t  pc,
             *imm = UI_IMM(inst);
             break;
 
+        case 1:
+            /* c.fldsp */
+            *op = FLD;
+            *rd = BITS(inst, 11, 7);
+            *rs1 = 2;   /* sp */
+            *imm = LDSP_IMM(inst);
+            break;
+
         case 2:
             /* c.lwsp */
             *op = LW;
