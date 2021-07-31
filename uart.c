@@ -2,7 +2,9 @@
  * UART
  */
 
+#include <unistd.h>
 #include <malloc.h>
+#include <pthread.h>
 
 #include "device.h"
 #include "util.h"
@@ -23,8 +25,13 @@
 #define UART_MSR 6      /* In:  Modem Status Register */
 #define UART_SCR 7      /* I/O: Scratch Register */
 
-#define UART_LSR_THRE 0x20  /* Transmit-hold-register empty */
 #define UART_LSR_TEMT 0x40  /* Transmitter empty */
+#define UART_LSR_THRE 0x20  /* Transmit-hold-register empty */
+#define UART_LSR_BI   0x10  /* Break interrupt indicator */
+#define UART_LSR_FE   0x08  /* Frame error indicator */
+#define UART_LSR_PE   0x04  /* Parity error indicator */
+#define UART_LSR_OE   0x02  /* Overrun error indicator */
+#define UART_LSR_DR   0x01  /* Receiver data ready */
 
 #define UART_LCR_DLAB 0x80  /* DLAB enable */
 
@@ -37,6 +44,9 @@
 #define UART_IIR_THRI   0x02    /* Transmitter holding register empty */
 #define UART_IIR_RDI    0x04    /* Receiver data interrupt */
 #define UART_IIR_RLSI   0x06    /* Receiver line status interrupt */
+
+#define UART_IIR_NO_INT 0x01    /* No interrupts pending */
+#define UART_IIR_ID     0x06    /* Mask for the interrupt ID */
 
 
 typedef struct _uart_t
@@ -55,24 +65,42 @@ typedef struct _uart_t
     uint8_t scr;
 
     uint16_t divider;
+
+    bool    thr_pending;
 } uart_t;
 
 
 static uint64_t
 uart_read(void *dev, uint64_t addr, size_t size, params_t params)
 {
+    uint8_t ret;
     uart_t *uart = (uart_t *) dev;
 
     switch (addr)
     {
     case UART_RBR:  /* 0 */
+        uart->lsr &= ~(UART_LSR_DR | UART_LSR_BI);
+
+        if (uart->ier & UART_IER_THRI)
+            uart->iir = UART_IIR_THRI;
+        else
+            uart->iir = UART_IIR_NO_INT;
+
+        if (uart->iir != UART_IIR_NO_INT)
+            plic_signal(uart->irq_num);
+
         return uart->rbr;
 
     case UART_IER:  /* 1 */
         return uart->ier;
 
     case UART_IIR:  /* 2 */
-        return uart->iir;
+        ret = uart->iir;
+        if ((ret & UART_IIR_ID) == UART_IIR_THRI) {
+            uart->thr_pending = false;
+            uart->iir = UART_IIR_NO_INT;
+        }
+        return ret;
 
     case UART_LCR:  /* 3 */
         return uart->lcr;
@@ -105,28 +133,39 @@ uart_write(void *dev, uint64_t addr, uint64_t data, size_t size,
     switch (addr)
     {
     case UART_THR:  /* 0 */
-        if (uart->lcr & UART_LCR_DLAB)
+        if (uart->lcr & UART_LCR_DLAB) {
             uart->divider = (uart->divider & 0xFF00) | (data & 0xFF);
-        else
+        } else {
+            uart->thr_pending = false;
             putchar((uint8_t)data);
+            fflush(stdout);
+        }
         break;
 
     case UART_IER:  /* 1 */
         if (uart->lcr & UART_LCR_DLAB) {
             uart->divider = ((data & 0xFF) << 8) | (uart->divider & 0x00FF);
         } else {
+            bool changed = (uart->ier ^ data) & 0x0f;
             uart->ier = (uint8_t)data;
-            if (uart->ier) {
+            if (changed) {
+                if (uart->ier & UART_IER_THRI)
+                    uart->thr_pending = true;
+
                 if (uart->ier & UART_IER_RLSI)
                     uart->iir = UART_IIR_RLSI;
-                else if (uart->ier & UART_IER_RDI)
+                else if ((uart->ier & UART_IER_RDI) &&
+                         (uart->lsr & UART_LSR_DR))
                     uart->iir = UART_IIR_RDI;
-                else if (uart->ier & UART_IER_THRI)
+                else if ((uart->ier & UART_IER_THRI) && uart->thr_pending)
                     uart->iir = UART_IIR_THRI;
                 else if (uart->ier & UART_IER_MSI)
                     uart->iir = UART_IIR_MSI;
+                else
+                    uart->iir = UART_IIR_NO_INT;
 
-                plic_signal(uart->irq_num);
+                if (uart->iir != UART_IIR_NO_INT)
+                    plic_signal(uart->irq_num);
             }
         }
         break;
@@ -158,9 +197,30 @@ uart_write(void *dev, uint64_t addr, uint64_t data, size_t size,
     return 0;
 }
 
+static void *
+_routine(void *arg)
+{
+    uart_t *uart = (uart_t *) arg;
+
+    while (1) {
+        uart->rbr = getch();
+        if (uart->rbr == 3) /* CTRL_C */
+            break;
+
+        uart->lsr |= UART_LSR_DR;
+        if (uart->ier & UART_IER_RDI) {
+            uart->iir = UART_IIR_RDI;
+            plic_signal(uart->irq_num);
+        }
+    }
+
+    return NULL;
+}
+
 device_t *
 uart_init(address_space *parent_as, uint32_t irq_num)
 {
+    pthread_t tid;
     uart_t *uart;
 
     uart = calloc(1, sizeof(uart_t));
@@ -180,6 +240,8 @@ uart_init(address_space *parent_as, uint32_t irq_num)
     uart->dev.as.device = uart;
 
     register_address_space(parent_as, &(uart->dev.as));
+
+    pthread_create(&tid, NULL, _routine, uart);
 
     return (device_t *) uart;
 }

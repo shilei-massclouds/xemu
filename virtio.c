@@ -15,7 +15,7 @@ vring_avail_idx(vqueue_t *vq)
 {
     vring_t *vring = (vring_t *)vq;
     uint64_t pa = vring->avail + offsetof(vring_avail_t, idx);
-    return read_nommu(NULL, pa, 2, 0);
+    return as_read_nommu(NULL, pa, 2, 0);
 }
 
 static bool
@@ -29,7 +29,7 @@ vring_avail_ring(vqueue_t *vq, int i)
 {
     vring_t *vring = (vring_t *)vq;
     uint64_t pa = vring->avail + offsetof(vring_avail_t, ring[i]);
-    return read_nommu(NULL, pa, 2, 0);
+    return as_read_nommu(NULL, pa, 2, 0);
 }
 
 static int
@@ -51,7 +51,7 @@ vring_desc_read(vqueue_t *vq, uint32_t idx, vring_desc_t *desc)
 {
     vring_t *vring = (vring_t *)vq;
     uint64_t pa = vring->desc + idx * sizeof(vring_desc_t);
-    read_blob(pa, sizeof(vring_desc_t), (uint8_t *)desc);
+    as_read_blob(pa, sizeof(vring_desc_t), (uint8_t *)desc);
 }
 
 vq_request_t *
@@ -68,7 +68,7 @@ vring_desc_read_indirect(uint32_t head, uint64_t addr, uint32_t len)
         panic("bad size %u for indirect table\n", len);
 
     while (1) {
-        read_blob(addr + offset, sizeof(vring_desc_t), (uint8_t *)&desc);
+        as_read_blob(addr + offset, sizeof(vring_desc_t), (uint8_t *)&desc);
 
         iov[iov_num].base   = desc.addr;
         iov[iov_num].len    = desc.len;
@@ -115,7 +115,7 @@ vring_set_avail_event(vqueue_t *vq, uint16_t val)
 {
     vring_t *vring = (vring_t *)vq;
     uint64_t pa = vring->used + offsetof(vring_used_t, ring[vq->vring.num]);
-    write_nommu(NULL, pa, 2, val, 0);
+    as_write_nommu(NULL, pa, 2, val, 0);
 }
 
 vq_request_t *
@@ -168,7 +168,7 @@ vring_used_idx_set(vqueue_t *vq, uint16_t val)
 {
     vring_t *vring = (vring_t *)vq;
     uint64_t pa = vring->used + offsetof(vring_used_t, idx);
-    write_nommu(NULL, pa, 2, val, 0);
+    as_write_nommu(NULL, pa, 2, val, 0);
 }
 
 void
@@ -177,8 +177,8 @@ vring_used_write(vqueue_t *vq, vq_request_t *req)
     vring_t *vring = (vring_t *)vq;
     uint32_t idx = vq->used_idx % vring->num;
     uint64_t pa = vring->used + offsetof(vring_used_t, ring[idx]);
-    write_nommu(NULL, pa, 4, req->index, 0);
-    write_nommu(NULL, pa + 4, 4, req->in_len, 0);
+    as_write_nommu(NULL, pa, 4, req->index, 0);
+    as_write_nommu(NULL, pa + 4, 4, req->in_len, 0);
 
     vq->used_idx++;
     vring_used_idx_set(vq, vq->used_idx);

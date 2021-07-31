@@ -230,7 +230,7 @@ virtio_blk_get_features()
 static void
 _complete(virtio_blk_t *blk, vq_request_t *req)
 {
-    write_nommu(NULL, req->iov[req->num-1].base, 1, VIRTIO_BLK_S_OK, 0);
+    as_write_nommu(NULL, req->iov[req->num-1].base, 1, VIRTIO_BLK_S_OK, 0);
 
     vring_used_write(blk->vdev.vq, req);
 
@@ -263,7 +263,7 @@ _handle_read(virtio_blk_t *blk, vq_request_t *req, uint64_t sector)
         if (fread(data, 1, req->iov[i].len, fp) != req->iov[i].len)
             panic("%s: cannot read file %s\n", __func__, blk->filename);
 
-        write_blob(req->iov[i].base, req->iov[i].len, data);
+        as_write_blob(req->iov[i].base, req->iov[i].len, data);
         free(data);
     }
 
@@ -284,7 +284,7 @@ _handle_write(virtio_blk_t *blk, vq_request_t *req, uint64_t sector)
         panic("%s: bad request number %d\n", __func__, req->num);
 
     data = malloc(req->iov[1].len);
-    read_blob(req->iov[1].base, req->iov[1].len, data);
+    as_read_blob(req->iov[1].base, req->iov[1].len, data);
 
     fp = fopen(blk->filename, "r+b");
     if (fp == NULL)
@@ -326,7 +326,7 @@ _do_request(virtio_blk_t *blk, vq_request_t *req)
         panic("%s: bad out header\n", __func__);
     }
 
-    read_blob(req->iov[0].base, sizeof(virtio_blk_outhdr), (uint8_t *)&outhdr);
+    as_read_blob(req->iov[0].base, sizeof(virtio_blk_outhdr), (uint8_t *)&outhdr);
 
     switch (outhdr.type & ~(VIRTIO_BLK_T_OUT | VIRTIO_BLK_T_BARRIER))
     {

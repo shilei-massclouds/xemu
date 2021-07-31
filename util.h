@@ -109,4 +109,7 @@ cpu_get_host_ticks(void)
     return ret;
 }
 
+uint8_t
+getch(void);
+
 #endif /* UTIL_H */

@@ -6,7 +6,9 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <time.h>
+#include <termio.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #include "util.h"
 
@@ -39,4 +41,27 @@ get_clock_realtime(void)
     struct timeval tv;
     gettimeofday(&tv, NULL);
     return tv.tv_sec * 1000000000LL + (tv.tv_usec * 1000);
+}
+
+uint8_t
+getch(void)
+{
+    char c;
+    struct termios nts, ots;
+
+    if (tcgetattr(STDIN_FILENO, &ots) < 0)
+        return 0;
+
+    nts = ots;
+    cfmakeraw(&nts);
+
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &nts) < 0)
+        return 0;
+
+    c = getchar();
+
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &ots) < 0)
+        return 0;
+
+    return c;
 }

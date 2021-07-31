@@ -58,25 +58,25 @@ void
 register_address_space(address_space *parent, address_space *child);
 
 uint64_t
-read_nommu(address_space *as, uint64_t addr, size_t size,
+as_read_nommu(address_space *as, uint64_t addr, size_t size,
            params_t params);
 
 uint64_t
-write_nommu(address_space *as, uint64_t addr,
+as_write_nommu(address_space *as, uint64_t addr,
             size_t size, uint64_t data, params_t params);
 
 uint64_t
-read(address_space *as, uint64_t vaddr, size_t size,
+as_read(address_space *as, uint64_t vaddr, size_t size,
      params_t params, bool *has_except);
 
 uint64_t
-write(address_space *as, uint64_t vaddr, size_t size, uint64_t data,
+as_write(address_space *as, uint64_t vaddr, size_t size, uint64_t data,
       params_t params, bool *has_except);
 
 void
-read_blob(uint64_t addr, size_t size, uint8_t *data);
+as_read_blob(uint64_t addr, size_t size, uint8_t *data);
 
 void
-write_blob(uint64_t addr, size_t size, uint8_t *data);
+as_write_blob(uint64_t addr, size_t size, uint8_t *data);
 
 #endif /* ADDRESS_SAPCE_H */

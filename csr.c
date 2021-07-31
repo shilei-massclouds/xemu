@@ -155,7 +155,8 @@ _read(uint32_t addr, bool *has_except)
         break;
 
     default:
-        panic("%s: bad addr 0x%x\n", __func__, addr);
+        if (addr != 0)
+            panic("%s: bad addr 0x%x\n", __func__, addr);
     }
 
     return 0;

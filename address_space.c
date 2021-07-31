@@ -13,14 +13,14 @@ extern uint8_t  priv;
 address_space root_as;
 
 static uint64_t
-read_dummy(void *dev, uint64_t addr, size_t size, params_t params)
+as_read_dummy(void *dev, uint64_t addr, size_t size, params_t params)
 {
     panic("%s: bad addr(0x%llx) priv(%u)!\n", __func__, addr, priv);
     return 0;
 }
 
 static uint64_t
-write_dummy(void *dev, uint64_t addr, uint64_t data, size_t size,
+as_write_dummy(void *dev, uint64_t addr, uint64_t data, size_t size,
             params_t params)
 {
     panic("%s: bad addr(0x%llx)\n", __func__, addr);
@@ -33,8 +33,8 @@ init_address_space(address_space *as, uint64_t start, uint64_t end)
     as->start = start;
     as->end   = end;
 
-    as->ops.read_op = read_dummy;
-    as->ops.write_op = write_dummy;
+    as->ops.read_op = as_read_dummy;
+    as->ops.write_op = as_write_dummy;
 
     as->device = NULL;
 
@@ -52,7 +52,7 @@ register_address_space(address_space *parent, address_space *child)
 }
 
 uint64_t
-read_nommu(address_space *as, uint64_t addr, size_t size, params_t params)
+as_read_nommu(address_space *as, uint64_t addr, size_t size, params_t params)
 {
     address_space *child;
 
@@ -65,7 +65,7 @@ read_nommu(address_space *as, uint64_t addr, size_t size, params_t params)
     child = as->children;
     while (child) {
         if (addr >= child->start && addr <= child->end)
-            return read_nommu(child, addr - child->start, size, params);
+            return as_read_nommu(child, addr - child->start, size, params);
 
         child = child->sibling;
     }
@@ -74,7 +74,7 @@ read_nommu(address_space *as, uint64_t addr, size_t size, params_t params)
 }
 
 uint64_t
-read(address_space *as, uint64_t vaddr, size_t size, params_t params,
+as_read(address_space *as, uint64_t vaddr, size_t size, params_t params,
      bool *has_except)
 {
     uint64_t paddr;
@@ -84,11 +84,11 @@ read(address_space *as, uint64_t vaddr, size_t size, params_t params,
         return 0;
     }
 
-    return read_nommu(as, paddr, size, params);
+    return as_read_nommu(as, paddr, size, params);
 }
 
 uint64_t
-write_nommu(address_space *as, uint64_t addr, size_t size, uint64_t data,
+as_write_nommu(address_space *as, uint64_t addr, size_t size, uint64_t data,
             params_t params)
 {
     address_space *child;
@@ -102,7 +102,7 @@ write_nommu(address_space *as, uint64_t addr, size_t size, uint64_t data,
     child = as->children;
     while (child) {
         if (addr >= child->start && addr <= child->end) {
-            return write_nommu(child, addr - child->start, size, data,
+            return as_write_nommu(child, addr - child->start, size, data,
                                params);
         }
 
@@ -113,7 +113,7 @@ write_nommu(address_space *as, uint64_t addr, size_t size, uint64_t data,
 }
 
 uint64_t
-write(address_space *as, uint64_t vaddr, size_t size, uint64_t data,
+as_write(address_space *as, uint64_t vaddr, size_t size, uint64_t data,
       params_t params, bool *has_except)
 {
     uint64_t paddr;
@@ -123,11 +123,11 @@ write(address_space *as, uint64_t vaddr, size_t size, uint64_t data,
         return 0;
     }
 
-    return write_nommu(as, paddr, size, data, params);
+    return as_write_nommu(as, paddr, size, data, params);
 }
 
 void
-read_blob(uint64_t addr, size_t size, uint8_t *data)
+as_read_blob(uint64_t addr, size_t size, uint8_t *data)
 {
     uint64_t dword;
     uint8_t byte;
@@ -136,7 +136,7 @@ read_blob(uint64_t addr, size_t size, uint8_t *data)
         panic("%s: not align to 8\n", __func__);
 
     while (size >= 8) {
-        dword = read_nommu(NULL, addr, 8, 0);
+        dword = as_read_nommu(NULL, addr, 8, 0);
         memcpy(data, &dword, 8);
         size -= 8;
         addr += 8;
@@ -144,7 +144,7 @@ read_blob(uint64_t addr, size_t size, uint8_t *data)
     }
 
     while (size) {
-        byte = read_nommu(NULL, addr, 1, 0);
+        byte = as_read_nommu(NULL, addr, 1, 0);
         memcpy(data, &byte, 1);
         size--;
         addr++;
@@ -153,7 +153,7 @@ read_blob(uint64_t addr, size_t size, uint8_t *data)
 }
 
 void
-write_blob(uint64_t addr, size_t size, uint8_t *data)
+as_write_blob(uint64_t addr, size_t size, uint8_t *data)
 {
     uint64_t dword;
     uint8_t byte;
@@ -163,7 +163,7 @@ write_blob(uint64_t addr, size_t size, uint8_t *data)
 
     while (size >= 8) {
         memcpy(&dword, data, 8);
-        write_nommu(NULL, addr, 8, dword, 0);
+        as_write_nommu(NULL, addr, 8, dword, 0);
         size -= 8;
         addr += 8;
         data += 8;
@@ -171,7 +171,7 @@ write_blob(uint64_t addr, size_t size, uint8_t *data)
 
     while (size) {
         byte = *data;
-        write_nommu(NULL, addr, 1, byte, 0);
+        as_write_nommu(NULL, addr, 1, byte, 0);
         size--;
         addr++;
         data++;

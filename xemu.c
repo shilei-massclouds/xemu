@@ -33,18 +33,18 @@ fetch(address_space *as, uint64_t pc, uint32_t *inst)
     bool has_except = false;
 
     if ((pc + 2) & (PAGE_SIZE - 1UL)) {
-        *inst = read(as, pc, 4, 0, &has_except);
+        *inst = as_read(as, pc, 4, 0, &has_except);
         if (has_except)
             return trap_enter(pc, CAUSE_INST_PAGE_FAULT, pc);
 
         return 0;
     }
 
-    lo = read(as, pc, 2, 0, &has_except);
+    lo = as_read(as, pc, 2, 0, &has_except);
     if (has_except)
         return trap_enter(pc, CAUSE_INST_PAGE_FAULT, pc);
 
-    hi = read(as, pc + 2, 2, 0, &has_except);
+    hi = as_read(as, pc + 2, 2, 0, &has_except);
     if (has_except)
         return trap_enter(pc, CAUSE_INST_PAGE_FAULT, pc);
 
