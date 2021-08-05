@@ -8,6 +8,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "csr.h"
+
 #define PAGE_SIZE 4096
 #define PAGE_BITS 12
 
@@ -108,6 +110,24 @@ cpu_get_host_ticks(void)
 
     return ret;
 }
+
+static inline void
+_set_pending_bit(uint32_t dst, uint32_t src, uint32_t index)
+{
+    bool has_except = false;
+    uint64_t data = csr_read(dst, &has_except);
+    SET_BIT(data, index, BIT(csr_read(src, &has_except), index));
+    csr_update(dst, data, CSR_OP_WRITE, &has_except);
+}
+
+void
+cpu_enable_clock(void);
+
+int64_t
+cpu_get_clock(void);
+
+uint64_t
+cpu_read_rtc(void);
 
 uint8_t
 getch(void);

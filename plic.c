@@ -3,6 +3,7 @@
  */
 
 #include <malloc.h>
+#include <pthread.h>
 
 #include "types.h"
 #include "address_space.h"
@@ -19,6 +20,8 @@
 typedef struct _plic_t
 {
     device_t dev;
+
+    pthread_mutex_t _mutex;
 
     uint32_t priority[NUM_SOURCES + 1];
 
@@ -57,7 +60,10 @@ plic_signal(uint32_t id)
         panic("%s: interrupt number cannot be 0\n", __func__);
 
     _bit_pos(id, &index, &offset);
+
+    pthread_mutex_lock(&plic->_mutex);
     plic->pending[index] |= (1 << offset);
+    pthread_mutex_unlock(&plic->_mutex);
 }
 
 static void
@@ -70,7 +76,10 @@ clear_pending_bit(uint32_t id)
         panic("%s: interrupt number cannot be 0\n", __func__);
 
     _bit_pos(id, &index, &offset);
+
+    pthread_mutex_lock(&plic->_mutex);
     plic->pending[index] &= ~(1 << offset);
+    pthread_mutex_unlock(&plic->_mutex);
 }
 
 static uint64_t
@@ -179,6 +188,8 @@ plic_init(address_space *parent_as)
     plic = calloc(1, sizeof(plic_t));
     plic->dev.name = "plic";
 
+    pthread_mutex_init(&plic->_mutex, NULL);
+
     init_address_space(&(plic->dev.as),
                        PLIC_ADDRESS_SPACE_START,
                        PLIC_ADDRESS_SPACE_END);
@@ -210,27 +221,18 @@ first_one(uint32_t bits)
     return 0;
 }
 
-static void
-_set_pending_bit(uint32_t dst, uint32_t src, uint32_t index)
-{
-    bool has_except = false;
-    uint64_t data = csr_read(dst, &has_except);
-    SET_BIT(data, index, BIT(csr_read(src, &has_except), index));
-    csr_update(dst, data, CSR_OP_WRITE, &has_except);
-}
-
 uint32_t
-check_interrupt()
+plic_interrupt(bool deleg)
 {
     int i;
     uint32_t ret = 0;
-    bool has_except = false;
 
-    bool deleg = BIT(csr_read(MIDELEG, &has_except), 9);
+    //bool deleg = BIT(csr_read(MIDELEG, &has_except), 9);
     uint32_t *xie = deleg ? plic->sie : plic->mie;
     uint32_t xpt = deleg ? plic->spt : plic->mpt;
     uint32_t *xcc = deleg ? &plic->scc : &plic->mcc;
 
+    pthread_mutex_lock(&plic->_mutex);
     for (i = 0; i < 5; i++) {
         uint32_t bits = plic->pending[i] & xie[i];
         if (bits) {
@@ -242,7 +244,11 @@ check_interrupt()
             }
         }
     }
+    pthread_mutex_unlock(&plic->_mutex);
 
+    return ret;
+
+    /*
     if (ret == 0)
         return 0;
 
@@ -269,4 +275,5 @@ check_interrupt()
     }
 
     return ret;
+    */
 }

@@ -88,6 +88,8 @@ main()
 
     uart_init(&root_as, 0xa);
 
+    cpu_enable_clock();
+
     for (i = 0; i < 8; i++) {
         device_t *vdev;
         vdev = virtio_mmio_init(&root_as,
@@ -138,17 +140,7 @@ main()
 
         pc = next_pc;
 
-        if (check_interrupt()) {
-            uint64_t cause;
-            if (priv == S_MODE)
-                cause = CAUSE_S_EXTERNAL_INTR;
-            else if (priv == M_MODE)
-                cause = CAUSE_M_EXTERNAL_INTR;
-            else
-                cause = CAUSE_U_EXTERNAL_INTR;
-
-            pc = trap_enter(pc, cause, 0);
-        }
+        pc = handle_interrupt(pc);
     }
 
     return 0;

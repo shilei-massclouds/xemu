@@ -3,6 +3,7 @@
  */
 
 #include "trap.h"
+#include "device.h"
 
 uint64_t
 trap_enter(uint64_t pc, uint64_t cause, uint64_t tval)
@@ -86,4 +87,85 @@ trap_exit(op_t op)
     }
 
     return ret;
+}
+
+uint64_t
+handle_interrupt(uint64_t pc)
+{
+    bool has_except = false;
+    bool deleg = BIT(csr_read(MIDELEG, &has_except), 9);
+
+    if (deleg) {
+        if (!BIT(csr_read(SSTATUS, &has_except), MS_SIE))
+            return pc;
+    } else {
+        if (!BIT(csr_read(MSTATUS, &has_except), MS_MIE))
+            return pc;
+    }
+
+    if (plic_interrupt(deleg)) {
+        uint64_t cause;
+        //printf("%s: (%lx) 1\n", __func__, pc);
+
+        if (deleg) {
+            if (priv == S_MODE)
+                _set_pending_bit(SIP, SIE, 9);
+            else if (priv == U_MODE)
+                _set_pending_bit(SIP, SIE, 8);
+        } else {
+            if (priv == S_MODE)
+                _set_pending_bit(MIP, MIE, 9);
+            else if (priv == U_MODE)
+                _set_pending_bit(MIP, MIE, 8);
+            else if (priv == M_MODE)
+                _set_pending_bit(MIP, MIE, 11);
+        }
+
+        if (priv == S_MODE)
+            cause = CAUSE_S_EXTERNAL_INTR;
+        else if (priv == M_MODE)
+            cause = CAUSE_M_EXTERNAL_INTR;
+        else
+            cause = CAUSE_U_EXTERNAL_INTR;
+
+        pc = trap_enter(pc, cause, 0);
+    } else if (check_clint()) {
+        uint64_t cause;
+        uint64_t newmip = csr_read(MIP, &has_except);
+        uint64_t newmie = csr_read(MIE, &has_except);
+        /*
+        printf("%s: (%lx) 2 (%lx, %lx) %u\n",
+               __func__, pc, newmip, newmie, priv);
+               */
+
+        _set_pending_bit(MIP, MIE, 7);
+        cause = CAUSE_M_TIMER_INTR;
+        pc = trap_enter(pc, cause, 0);
+    } else {
+        static uint64_t mip;
+        uint64_t newmip = csr_read(MIP, &has_except);
+        /*
+        if (newmip != mip)
+            printf("%s: (%lx) 3 (%lx, %lx) %u\n",
+                   __func__, pc, newmip, mip, priv);
+                   */
+
+        mip = newmip;
+        if ((mip & 0x20) && (priv == S_MODE)) {
+            /*
+            printf("%s: (%lx) 5 (%lx, %lx) %u\n",
+                   __func__, pc, newmip, mip, priv);
+                   */
+
+            if (BIT(csr_read(SSTATUS, &has_except), MS_SIE) &&
+                BIT(csr_read(SIE, &has_except), 5)) {
+                uint64_t cause;
+                _set_pending_bit(SIP, SIE, 5);
+                cause = CAUSE_S_TIMER_INTR;
+                pc = trap_enter(pc, cause, 0);
+            }
+        }
+    }
+
+    return pc;
 }

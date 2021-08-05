@@ -137,8 +137,10 @@ _read(uint32_t addr, bool *has_except)
         return _csr[addr];
 
     /* 0xc00 ~ 0xc02 */
-    case CYCLE:
     case TIME:
+        return cpu_read_rtc();
+
+    case CYCLE:
     case INSTRET:
         return cpu_get_host_ticks();
 

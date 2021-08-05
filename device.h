@@ -53,6 +53,9 @@ void
 plic_signal(uint32_t id);
 
 uint32_t
-check_interrupt();
+plic_interrupt(bool deleg);
+
+bool
+check_clint(void);
 
 #endif /* DEVICE_H */

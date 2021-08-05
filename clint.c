@@ -3,6 +3,9 @@
  */
 
 #include <malloc.h>
+#include <pthread.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "address_space.h"
 #include "device.h"
@@ -15,22 +18,38 @@
 #define CLINT_MTIMECMP  0x4000
 #define CLINT_MTIME     0xBFF8
 
+static bool _timer_intr;
+
 typedef struct _clint_t
 {
     device_t dev;
 
+    pthread_mutex_t _mutex;
+    pthread_cond_t _cond;
+
+    bool timer_running;
+
     uint32_t msip;
 
     uint32_t mtime;
-    uint32_t mtimecmp;
+    uint64_t mtimecmp;
 } clint_t;
 
+
+bool
+check_clint(void)
+{
+    if (!_timer_intr)
+        return false;
+
+    _timer_intr = false;
+    _set_pending_bit(MIP, MIE, 7);
+    return true;
+}
 
 static uint64_t
 clint_read(void *dev, uint64_t addr, size_t size, params_t params)
 {
-    //clint_t *clint = (clint_t *) dev;
-
     switch (addr)
     {
     default:
@@ -43,7 +62,7 @@ clint_read(void *dev, uint64_t addr, size_t size, params_t params)
 
 static uint64_t
 clint_write(void *dev, uint64_t addr, uint64_t data, size_t size,
-           params_t params)
+            params_t params)
 {
     clint_t *clint = (clint_t *) dev;
 
@@ -53,7 +72,23 @@ clint_write(void *dev, uint64_t addr, uint64_t data, size_t size,
         clint->msip = (uint32_t) data;
         break;
     case CLINT_MTIMECMP:
+        pthread_mutex_lock(&clint->_mutex);
         clint->mtimecmp = data;
+
+        if (cpu_read_rtc() > clint->mtimecmp) {
+            /*
+            printf("+++ +++ %s: Set true (%lx, %lx)\n",
+                   __func__,
+                   cpu_read_rtc(),
+                   clint->mtimecmp);
+                   */
+
+            _timer_intr = true;
+        } else {
+            clint->timer_running = true;
+        }
+        pthread_mutex_unlock(&clint->_mutex);
+        pthread_cond_signal(&clint->_cond);
         break;
     default:
         panic("%s: need to be implemented! [0x%lx]: 0x%lx (%u)\n",
@@ -63,9 +98,48 @@ clint_write(void *dev, uint64_t addr, uint64_t data, size_t size,
     return 0;
 }
 
+static void *
+_routine(void *arg)
+{
+    clint_t *clint = (clint_t *) arg;
+
+    while (1) {
+        pthread_mutex_lock(&clint->_mutex);
+
+        while (!clint->timer_running) {
+            pthread_cond_wait(&clint->_cond, &clint->_mutex);
+        }
+
+        while (cpu_read_rtc() < clint->mtimecmp) {
+            struct timeval now;
+            struct timespec next_time;
+            gettimeofday(&now, NULL);
+            next_time.tv_sec = now.tv_sec + 0;
+            next_time.tv_nsec = (now.tv_usec + 1) * 1000;
+            pthread_cond_timedwait(&clint->_cond, &clint->_mutex, &next_time);
+            /*
+            if (clint->mtimecmp != -1UL)
+                printf("+++ +++ %s: (%lx, %lx, %lx)\n",
+                       __func__,
+                       current_ticks(),
+                       clint->mtimecmp,
+                       get_clock_realtime());
+                       */
+        }
+
+        //printf("+++ +++ %s: Set true\n", __func__);
+        _timer_intr = true;
+        clint->timer_running = false;
+        pthread_mutex_unlock(&clint->_mutex);
+    }
+
+    return NULL;
+}
+
 device_t *
 clint_init(address_space *parent_as)
 {
+    pthread_t tid;
     clint_t *clint;
 
     clint = calloc(1, sizeof(clint_t));
@@ -81,6 +155,11 @@ clint_init(address_space *parent_as)
     clint->dev.as.device = clint;
 
     register_address_space(parent_as, &(clint->dev.as));
+
+    pthread_mutex_init(&clint->_mutex, NULL);
+    pthread_cond_init(&clint->_cond, NULL);
+
+    pthread_create(&tid, NULL, _routine, clint);
 
     return (device_t *) clint;
 }

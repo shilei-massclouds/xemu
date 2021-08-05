@@ -17,4 +17,7 @@ trap_enter(uint64_t pc, uint64_t cause, uint64_t tval);
 uint64_t
 trap_exit(op_t op);
 
+uint64_t
+handle_interrupt(uint64_t pc);
+
 #endif /* TRAP_H */
