@@ -6,6 +6,7 @@
 #define DEVICE_H
 
 #include "address_space.h"
+#include "interrupt.h"
 
 typedef struct _device
 {
@@ -53,9 +54,9 @@ void
 plic_signal(uint32_t id);
 
 uint32_t
-plic_interrupt(bool deleg);
+plic_interrupt(void);
 
-bool
-check_clint(void);
+intr_type_t
+clint_interrupt(void);
 
 #endif /* DEVICE_H */

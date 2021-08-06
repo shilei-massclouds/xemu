@@ -98,7 +98,7 @@ plic_read(void *dev, uint64_t addr, size_t size, params_t params)
     if (addr == 0x200004) {
         /* Claim */
         if (plic->mcc == 0)
-            return 0;
+            panic("%s: bad claim mcc(%u)\n", __func__, plic->mcc);
 
         clear_pending_bit(plic->mcc);
         return plic->mcc;
@@ -108,6 +108,7 @@ plic_read(void *dev, uint64_t addr, size_t size, params_t params)
         /* Claim */
         if (plic->scc == 0)
             return 0;
+        //panic("%s: bad claim scc(%u)\n", __func__, plic->scc);
 
         clear_pending_bit(plic->scc);
         return plic->scc;
@@ -222,15 +223,14 @@ first_one(uint32_t bits)
 }
 
 uint32_t
-plic_interrupt(bool deleg)
+plic_interrupt(void)
 {
     int i;
-    uint32_t ret = 0;
+    int ret = 0;
 
-    //bool deleg = BIT(csr_read(MIDELEG, &has_except), 9);
-    uint32_t *xie = deleg ? plic->sie : plic->mie;
-    uint32_t xpt = deleg ? plic->spt : plic->mpt;
-    uint32_t *xcc = deleg ? &plic->scc : &plic->mcc;
+    uint32_t *xie = (priv == S_MODE) ? plic->sie : plic->mie;
+    uint32_t xpt = (priv == S_MODE) ? plic->spt : plic->mpt;
+    uint32_t *xcc = (priv == S_MODE) ? &plic->scc : &plic->mcc;
 
     pthread_mutex_lock(&plic->_mutex);
     for (i = 0; i < 5; i++) {
@@ -247,33 +247,4 @@ plic_interrupt(bool deleg)
     pthread_mutex_unlock(&plic->_mutex);
 
     return ret;
-
-    /*
-    if (ret == 0)
-        return 0;
-
-    if (deleg) {
-        if (BIT(csr_read(SSTATUS, &has_except), MS_SIE)) {
-            if (priv == S_MODE)
-                _set_pending_bit(SIP, SIE, 9);
-            else if (priv == U_MODE)
-                _set_pending_bit(SIP, SIE, 8);
-        } else {
-            return 0;
-        }
-    } else {
-        if (BIT(csr_read(MSTATUS, &has_except), MS_MIE)) {
-            if (priv == S_MODE)
-                _set_pending_bit(MIP, MIE, 9);
-            else if (priv == U_MODE)
-                _set_pending_bit(MIP, MIE, 8);
-            else if (priv == M_MODE)
-                _set_pending_bit(MIP, MIE, 11);
-        } else {
-            return 0;
-        }
-    }
-
-    return ret;
-    */
 }

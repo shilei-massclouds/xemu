@@ -53,7 +53,7 @@ fetch(address_space *as, uint64_t pc, uint32_t *inst)
 }
 
 int
-main()
+main(void)
 {
     int i;
     device_t *rom;
@@ -69,6 +69,8 @@ main()
 
     /* Init CSR */
     csr_init();
+
+    cpu_enable_clock();
 
     rtc_init(&root_as);
     pci_host_init(&root_as);
@@ -87,8 +89,6 @@ main()
     ram_init(&root_as);
 
     uart_init(&root_as, 0xa);
-
-    cpu_enable_clock();
 
     for (i = 0; i < 8; i++) {
         device_t *vdev;

@@ -22,14 +22,14 @@ trap_enter(uint64_t pc, uint64_t cause, uint64_t tval)
         /* Handle trap in S_MODE */
         uint64_t mode_bit = (priv == U_MODE) ? 0UL : 1UL;
         uint64_t sstatus = csr_read(SSTATUS, &has_except);
-        SET_BIT(sstatus, MS_SPP, mode_bit);
+        SET_BIT(sstatus, BIT_SPP_POS, mode_bit);
         priv = S_MODE;
 
         csr_update(SCAUSE, cause, CSR_OP_WRITE, &has_except);
         csr_update(STVAL, tval, CSR_OP_WRITE, &has_except);
 
-        SET_BIT(sstatus, MS_SPIE, BIT(sstatus, MS_SIE));
-        SET_BIT(sstatus, MS_SIE, 0UL);
+        SET_BIT(sstatus, BIT_SPIE_POS, BIT(sstatus, BIT_SIE_POS));
+        SET_BIT(sstatus, BIT_SIE_POS, 0UL);
 
         csr_update(SSTATUS, sstatus, CSR_OP_WRITE, &has_except);
 
@@ -44,8 +44,8 @@ trap_enter(uint64_t pc, uint64_t cause, uint64_t tval)
         csr_update(MCAUSE, cause, CSR_OP_WRITE, &has_except);
         csr_update(MTVAL, tval, CSR_OP_WRITE, &has_except);
 
-        SET_BIT(mstatus, MS_MPIE, BIT(mstatus, MS_MIE));
-        SET_BIT(mstatus, MS_MIE, 0UL);
+        SET_BIT(mstatus, BIT_MPIE_POS, BIT(mstatus, BIT_MIE_POS));
+        SET_BIT(mstatus, BIT_MIE_POS, 0UL);
 
         csr_update(MSTATUS, mstatus, CSR_OP_WRITE, &has_except);
 
@@ -68,8 +68,8 @@ trap_exit(op_t op)
     {
     case SRET:
         sstatus = csr_read(SSTATUS, &has_except);
-        priv = BIT(sstatus, MS_SPP) ? S_MODE : U_MODE;
-        SET_BIT(sstatus, MS_SIE, BIT(sstatus, MS_SPIE));
+        priv = BIT(sstatus, BIT_SPP_POS) ? S_MODE : U_MODE;
+        SET_BIT(sstatus, BIT_SIE_POS, BIT(sstatus, BIT_SPIE_POS));
         csr_update(SSTATUS, sstatus, CSR_OP_WRITE, &has_except);
         ret = csr_read(SEPC, &has_except);
         break;
@@ -77,7 +77,7 @@ trap_exit(op_t op)
     case MRET:
         mstatus = csr_read(MSTATUS, &has_except);
         priv = BITS(mstatus, 12, 11);
-        SET_BIT(mstatus, MS_MIE, BIT(mstatus, MS_MPIE));
+        SET_BIT(mstatus, BIT_MIE_POS, BIT(mstatus, BIT_MPIE_POS));
         csr_update(MSTATUS, mstatus, CSR_OP_WRITE, &has_except);
         ret = csr_read(MEPC, &has_except);
         break;
@@ -92,79 +92,59 @@ trap_exit(op_t op)
 uint64_t
 handle_interrupt(uint64_t pc)
 {
+    bool deleg = false;
     bool has_except = false;
-    bool deleg = BIT(csr_read(MIDELEG, &has_except), 9);
+    uint32_t irq = 0;
+    uint32_t irq_bit = 0;
+    uint64_t cause = 0;
+    uint32_t eid = 0;
+    intr_type_t type = INTR_TYPE_NONE;
 
-    if (deleg) {
-        if (!BIT(csr_read(SSTATUS, &has_except), MS_SIE))
-            return pc;
-    } else {
-        if (!BIT(csr_read(MSTATUS, &has_except), MS_MIE))
-            return pc;
+    /* Source */
+    eid = plic_interrupt();
+    if (eid)
+        type = EXTERNAL_INTR_TYPE;
+    else
+        type = clint_interrupt();
+
+    if (!type)
+        return pc;
+
+    cause = intr_cause(type, priv);
+    irq = cause & 0xF;
+
+    irq_bit = (1UL << irq);
+
+    /* Target */
+    if (priv != M_MODE) {
+        uint64_t mideleg = csr_read(MIDELEG, &has_except);
+        deleg = mideleg & irq_bit;
     }
 
-    if (plic_interrupt(deleg)) {
-        uint64_t cause;
-        //printf("%s: (%lx) 1\n", __func__, pc);
-
-        if (deleg) {
-            if (priv == S_MODE)
-                _set_pending_bit(SIP, SIE, 9);
-            else if (priv == U_MODE)
-                _set_pending_bit(SIP, SIE, 8);
-        } else {
-            if (priv == S_MODE)
-                _set_pending_bit(MIP, MIE, 9);
-            else if (priv == U_MODE)
-                _set_pending_bit(MIP, MIE, 8);
-            else if (priv == M_MODE)
-                _set_pending_bit(MIP, MIE, 11);
+    bool enable = false;
+    if (deleg) {
+        uint64_t sstatus = csr_read(SSTATUS, &has_except);
+        enable = sstatus & BIT_SIE;
+        if (enable) {
+            uint64_t sie = csr_read(SIE, &has_except);
+            enable = sie & irq_bit;
         }
-
-        if (priv == S_MODE)
-            cause = CAUSE_S_EXTERNAL_INTR;
-        else if (priv == M_MODE)
-            cause = CAUSE_M_EXTERNAL_INTR;
-        else
-            cause = CAUSE_U_EXTERNAL_INTR;
-
-        pc = trap_enter(pc, cause, 0);
-    } else if (check_clint()) {
-        uint64_t cause;
-        uint64_t newmip = csr_read(MIP, &has_except);
-        uint64_t newmie = csr_read(MIE, &has_except);
-        /*
-        printf("%s: (%lx) 2 (%lx, %lx) %u\n",
-               __func__, pc, newmip, newmie, priv);
-               */
-
-        _set_pending_bit(MIP, MIE, 7);
-        cause = CAUSE_M_TIMER_INTR;
-        pc = trap_enter(pc, cause, 0);
     } else {
-        static uint64_t mip;
-        uint64_t newmip = csr_read(MIP, &has_except);
-        /*
-        if (newmip != mip)
-            printf("%s: (%lx) 3 (%lx, %lx) %u\n",
-                   __func__, pc, newmip, mip, priv);
-                   */
-
-        mip = newmip;
-        if ((mip & 0x20) && (priv == S_MODE)) {
-            /*
-            printf("%s: (%lx) 5 (%lx, %lx) %u\n",
-                   __func__, pc, newmip, mip, priv);
-                   */
-
-            if (BIT(csr_read(SSTATUS, &has_except), MS_SIE) &&
-                BIT(csr_read(SIE, &has_except), 5)) {
-                uint64_t cause;
-                _set_pending_bit(SIP, SIE, 5);
-                cause = CAUSE_S_TIMER_INTR;
-                pc = trap_enter(pc, cause, 0);
-            }
+        uint64_t mstatus = csr_read(MSTATUS, &has_except);
+        enable = mstatus & BIT_MIE;
+        if (enable) {
+            uint64_t mie = csr_read(MIE, &has_except);
+            enable = mie & irq_bit;
         }
+    }
+
+    if (enable) {
+        if (deleg)
+            csr_update(SIP, irq_bit, CSR_OP_SET, &has_except);
+        else
+            csr_update(MIP, irq_bit, CSR_OP_SET, &has_except);
+
+        pc = trap_enter(pc, cause, 0);
     }
 
     return pc;

@@ -79,6 +79,13 @@ cpu_read_rtc(void)
 uint8_t
 getch(void)
 {
+    return getchar();
+}
+
+/*
+uint8_t
+getch(void)
+{
     char c;
     struct termios nts, ots;
 
@@ -98,3 +105,4 @@ getch(void)
 
     return c;
 }
+*/

@@ -97,23 +97,33 @@
      MISA_M | MISA_I | MISA_C | MISA_A)
 
 /* [M|S]STATUS bits */
-#define MS_UIE      0
-#define MS_SIE      1
-#define MS_MIE      3
-#define MS_UPIE     4
-#define MS_SPIE     5
-#define MS_MPIE     7
-#define MS_SPP      8
+#define BIT_UIE_POS     0
+#define BIT_SIE_POS     1
+#define BIT_MIE_POS     3
+#define BIT_UPIE_POS    4
+#define BIT_SPIE_POS    5
+#define BIT_MPIE_POS    7
+#define BIT_SPP_POS     8
 
-#define CAUSE_U_SOFTWARE_INTR  0x8000000000000000
-#define CAUSE_S_SOFTWARE_INTR  0x8000000000000001
-#define CAUSE_M_SOFTWARE_INTR  0x8000000000000003
-#define CAUSE_U_TIMER_INTR     0x8000000000000004
-#define CAUSE_S_TIMER_INTR     0x8000000000000005
-#define CAUSE_M_TIMER_INTR     0x8000000000000007
-#define CAUSE_U_EXTERNAL_INTR  0x8000000000000008
-#define CAUSE_S_EXTERNAL_INTR  0x8000000000000009
-#define CAUSE_M_EXTERNAL_INTR  0x800000000000000b
+#define BIT_UIE     (1 << BIT_UIE_POS)
+#define BIT_SIE     (1 << BIT_SIE_POS)
+#define BIT_MIE     (1 << BIT_MIE_POS)
+#define BIT_UPIE    (1 << BIT_UPIE_POS)
+#define BIT_SPIE    (1 << BIT_SPIE_POS)
+#define BIT_MPIE    (1 << BIT_MPIE_POS)
+#define BIT_SPP     (1 << BIT_SPP_POS)
+
+#define BIT_CAUSE_INTR          0x8000000000000000
+
+#define CAUSE_U_SOFTWARE_INTR   (BIT_CAUSE_INTR | 0x0)
+#define CAUSE_S_SOFTWARE_INTR   (BIT_CAUSE_INTR | 0x1)
+#define CAUSE_M_SOFTWARE_INTR   (BIT_CAUSE_INTR | 0x3)
+#define CAUSE_U_TIMER_INTR      (BIT_CAUSE_INTR | 0x4)
+#define CAUSE_S_TIMER_INTR      (BIT_CAUSE_INTR | 0x5)
+#define CAUSE_M_TIMER_INTR      (BIT_CAUSE_INTR | 0x7)
+#define CAUSE_U_EXTERNAL_INTR   (BIT_CAUSE_INTR | 0x8)
+#define CAUSE_S_EXTERNAL_INTR   (BIT_CAUSE_INTR | 0x9)
+#define CAUSE_M_EXTERNAL_INTR   (BIT_CAUSE_INTR | 0xb)
 
 #define CAUSE_INST_ADDR_MISALIGNED  0x0
 #define CAUSE_INST_ACCESS_FAULT     0x1
@@ -198,6 +208,19 @@
 #define MARCHID     0xf12
 #define MIMPID      0xf13
 #define MHARTID     0xf14
+
+/* Layout for xip, xie, xideleg, etc. */
+#define BIT_MEI (1 << (CAUSE_M_EXTERNAL_INTR & 0xF))
+#define BIT_SEI (1 << (CAUSE_S_EXTERNAL_INTR & 0xF))
+#define BIT_UEI (1 << (CAUSE_U_EXTERNAL_INTR & 0xF))
+
+#define BIT_MTI (1 << (CAUSE_M_TIMER_INTR & 0xF))
+#define BIT_STI (1 << (CAUSE_S_TIMER_INTR & 0xF))
+#define BIT_UTI (1 << (CAUSE_U_TIMER_INTR & 0xF))
+
+#define BIT_MSI (1 << (CAUSE_M_SOFTWARE_INTR & 0xF))
+#define BIT_SSI (1 << (CAUSE_S_SOFTWARE_INTR & 0xF))
+#define BIT_USI (1 << (CAUSE_U_SOFTWARE_INTR & 0xF))
 
 #define U_MODE  0
 #define S_MODE  1

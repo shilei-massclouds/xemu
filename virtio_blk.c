@@ -6,6 +6,8 @@
 #include <malloc.h>
 #include <pthread.h>
 #include <string.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "virtio.h"
 #include "address_space.h"
@@ -377,8 +379,20 @@ virtio_blk_handle_request(virtio_dev_t *vdev, vq_request_t *req)
 
     pthread_mutex_lock(&blk->_mutex);
 
+    while (blk->_req) {
+        struct timeval now;
+        struct timespec next_time;
+        gettimeofday(&now, NULL);
+        next_time.tv_sec = now.tv_sec + 0;
+        next_time.tv_nsec = (now.tv_usec + 1) * 1000;
+        printf("Wait ...\n");
+        pthread_cond_timedwait(&blk->_cond, &blk->_mutex, &next_time);
+    }
+
+    /*
     if (blk->_req)
         panic("%s: _req already exists\n", __func__);
+        */
 
     blk->_req = req;
 

@@ -18,6 +18,7 @@
 #define CLINT_MTIMECMP  0x4000
 #define CLINT_MTIME     0xBFF8
 
+static bool _software_intr;
 static bool _timer_intr;
 
 typedef struct _clint_t
@@ -29,22 +30,20 @@ typedef struct _clint_t
 
     bool timer_running;
 
-    uint32_t msip;
-
-    uint32_t mtime;
     uint64_t mtimecmp;
 } clint_t;
 
 
-bool
-check_clint(void)
+intr_type_t
+clint_interrupt(void)
 {
-    if (!_timer_intr)
-        return false;
+    if (_timer_intr)
+        return TIMER_INTR_TYPE;
 
-    _timer_intr = false;
-    _set_pending_bit(MIP, MIE, 7);
-    return true;
+    if (_software_intr)
+        return SOFTWARE_INTR_TYPE;
+
+    return INTR_TYPE_NONE;
 }
 
 static uint64_t
@@ -69,10 +68,12 @@ clint_write(void *dev, uint64_t addr, uint64_t data, size_t size,
     switch (addr)
     {
     case CLINT_MSIP:
-        clint->msip = (uint32_t) data;
+        _software_intr = (bool) data;
+        printf("++++++++++++++++ Set msip\n");
         break;
     case CLINT_MTIMECMP:
         pthread_mutex_lock(&clint->_mutex);
+        _timer_intr = false;
         clint->mtimecmp = data;
 
         if (cpu_read_rtc() > clint->mtimecmp) {
