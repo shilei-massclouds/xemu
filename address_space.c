@@ -8,14 +8,13 @@
 #include "util.h"
 #include "mmu.h"
 
-extern uint8_t  priv;
-
 address_space root_as;
+
 
 static uint64_t
 as_read_dummy(void *dev, uint64_t addr, size_t size, params_t params)
 {
-    panic("%s: bad addr(0x%llx) priv(%u)!\n", __func__, addr, priv);
+    panic("%s: bad addr(0x%llx) priv(%u)!\n", __func__, addr, priv());
     return 0;
 }
 

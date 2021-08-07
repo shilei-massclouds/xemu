@@ -226,8 +226,6 @@
 #define S_MODE  1
 #define M_MODE  3
 
-extern uint8_t  priv;
-
 typedef enum _csr_op_type
 {
     CSR_OP_WRITE = 0,
@@ -246,5 +244,11 @@ csr_update(uint32_t addr, uint64_t data, csr_op_type type, bool *has_except);
 
 uint64_t
 csr_read(uint32_t addr, bool *has_except);
+
+uint32_t
+priv(void);
+
+void
+switch_to(uint32_t new_priv);
 
 #endif /* CSR_H */

@@ -5,7 +5,7 @@
 .PHONY: all clean
 
 CC = gcc
-CFLAGS = -Wall
+CFLAGS = -Wall# -Wconversion
 LDFLAGS = -lpthread
 
 INC = -I./

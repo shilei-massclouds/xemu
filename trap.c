@@ -13,10 +13,10 @@ trap_enter(uint64_t pc, uint32_t next_priv, uint64_t cause, uint64_t tval)
 
     if (next_priv == S_MODE) {
         /* Handle trap in S_MODE */
-        uint64_t mode_bit = (priv == U_MODE) ? 0UL : 1UL;
+        uint64_t mode_bit = (priv() == U_MODE) ? 0UL : 1UL;
         uint64_t sstatus = csr_read(SSTATUS, &has_except);
         SET_BIT(sstatus, BIT_SPP_POS, mode_bit);
-        priv = S_MODE;
+        switch_to(S_MODE);
 
         csr_update(SCAUSE, cause, CSR_OP_WRITE, &has_except);
         csr_update(STVAL, tval, CSR_OP_WRITE, &has_except);
@@ -31,8 +31,8 @@ trap_enter(uint64_t pc, uint32_t next_priv, uint64_t cause, uint64_t tval)
     } else {
         /* Handle trap in M_MODE. MS_MPP at [12,11]. */
         uint64_t mstatus = csr_read(MSTATUS, &has_except);
-        SET_BITS(mstatus, 12, 11, priv);
-        priv = M_MODE;
+        SET_BITS(mstatus, 12, 11, priv());
+        switch_to(M_MODE);
 
         csr_update(MCAUSE, cause, CSR_OP_WRITE, &has_except);
         csr_update(MTVAL, tval, CSR_OP_WRITE, &has_except);
@@ -61,7 +61,7 @@ trap_exit(op_t op)
     {
     case SRET:
         sstatus = csr_read(SSTATUS, &has_except);
-        priv = BIT(sstatus, BIT_SPP_POS) ? S_MODE : U_MODE;
+        switch_to(BIT(sstatus, BIT_SPP_POS) ? S_MODE : U_MODE);
         SET_BIT(sstatus, BIT_SIE_POS, BIT(sstatus, BIT_SPIE_POS));
         csr_update(SSTATUS, sstatus, CSR_OP_WRITE, &has_except);
         ret = csr_read(SEPC, &has_except);
@@ -69,7 +69,7 @@ trap_exit(op_t op)
 
     case MRET:
         mstatus = csr_read(MSTATUS, &has_except);
-        priv = BITS(mstatus, 12, 11);
+        switch_to(BITS(mstatus, 12, 11));
         SET_BIT(mstatus, BIT_MIE_POS, BIT(mstatus, BIT_MPIE_POS));
         csr_update(MSTATUS, mstatus, CSR_OP_WRITE, &has_except);
         ret = csr_read(MEPC, &has_except);
@@ -101,7 +101,7 @@ handle_interrupt(uint64_t pc)
         return pc;
 
     /* Target */
-    next_priv = intr_next_priv(type, priv);
+    next_priv = intr_next_priv(type, priv());
     if (next_priv == S_MODE) {
         uint64_t sstatus = csr_read(SSTATUS, &has_except);
         if (sstatus & BIT_SIE) {

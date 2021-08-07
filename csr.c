@@ -5,8 +5,20 @@
 #include "csr.h"
 #include "util.h"
 
-uint8_t priv = M_MODE;
+uint32_t _priv = M_MODE;
 uint64_t _csr[4096] = {0};
+
+uint32_t
+priv(void)
+{
+    return _priv;
+}
+
+void
+switch_to(uint32_t new_priv)
+{
+    _priv = new_priv;
+}
 
 void
 csr_init()

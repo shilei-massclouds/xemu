@@ -228,7 +228,7 @@ plic_interrupt(void)
     int i;
     int ret = 0;
 
-    uint32_t next_priv = intr_next_priv(EXTERNAL_INTR_TYPE, priv);
+    uint32_t next_priv = intr_next_priv(EXTERNAL_INTR_TYPE, priv());
 
     uint32_t *xie = (next_priv == S_MODE) ? plic->sie : plic->mie;
     uint32_t xpt = (next_priv == S_MODE) ? plic->spt : plic->mpt;

@@ -279,7 +279,7 @@ execute(address_space *as,
         break;
 
     case ECALL:
-        ret_pc = raise_except(pc, (CAUSE_ECALL_FROM_U_MODE + priv), 0);
+        ret_pc = raise_except(pc, (CAUSE_ECALL_FROM_U_MODE + priv()), 0);
         break;
 
     case URET:

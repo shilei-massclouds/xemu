@@ -42,7 +42,7 @@ except_next_priv(uint64_t cause, uint32_t priv)
 static inline uint64_t
 raise_except(uint64_t pc, uint64_t cause, uint64_t tval)
 {
-    return trap_enter(pc, except_next_priv(cause, priv), cause, tval);
+    return trap_enter(pc, except_next_priv(cause, priv()), cause, tval);
 }
 
 #endif /* TRAP_H */
