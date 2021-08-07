@@ -28,7 +28,7 @@
     (((SRC >> INDEX) & 1UL) ? ((1UL << NUM) - 1UL) : 0)
 
 #define TO_WORD(n) \
-    ((EXPAND_BIT((n), 31, 32) << 32) | BITS((n), 31, 0))
+    ((EXPAND_BIT((uint64_t)(n), 31, 32) << 32) | BITS((uint64_t)(n), 31, 0))
 
 #define _BITS_MASK(high, low) \
     (((1UL << ((high) - (low) + 1UL)) - 1UL) << (low))
@@ -73,7 +73,7 @@ static inline int ctz32(uint32_t val)
 static inline int
 get_file_size(const char *filename, uint64_t *psize)
 {
-    int size;
+    long size;
     FILE *fp = fopen(filename, "rb");
     if (fp == NULL)
         return -1;
@@ -85,7 +85,7 @@ get_file_size(const char *filename, uint64_t *psize)
     if (size < 0)
         return -1;
 
-    *psize = size;
+    *psize = (uint64_t)size;
     return 0;
 }
 

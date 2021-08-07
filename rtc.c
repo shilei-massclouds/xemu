@@ -40,8 +40,8 @@ rtc_read(void *dev, uint64_t addr, size_t size, params_t params)
     switch (addr)
     {
     case RTC_TIME_LOW:
-        dword = get_clock_realtime();
-        rtc->time_high = dword >> 32;
+        dword = (uint64_t)get_clock_realtime();
+        rtc->time_high = (uint32_t)(dword >> 32);
         return dword & 0xFFFFFFFF;
 
     case RTC_TIME_HIGH:

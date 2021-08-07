@@ -10,6 +10,6 @@
 extern uint64_t reg[32];
 extern uint64_t freg[32];
 
-const char * reg_name(int index);
+const char * reg_name(uint32_t index);
 
 #endif /* REGFILE_H */

@@ -17,8 +17,8 @@
 #include "trace.h"
 #include "virtio.h"
 
-#define VIRTIO_MMIO_AS_START_0  0x0000000010001000
-#define VIRTIO_MMIO_AS_END_0    0x0000000010001FFF
+#define VIRTIO_MMIO_AS_START_0  0x0000000010001000UL
+#define VIRTIO_MMIO_AS_END_0    0x0000000010001FFFUL
 
 extern address_space root_as;
 
@@ -33,18 +33,18 @@ fetch(address_space *as, uint64_t pc, uint32_t *inst)
     bool has_except = false;
 
     if ((pc + 2) & (PAGE_SIZE - 1UL)) {
-        *inst = as_read(as, pc, 4, 0, &has_except);
+        *inst = (uint32_t)as_read(as, pc, 4, 0, &has_except);
         if (has_except)
             return raise_except(pc, CAUSE_INST_PAGE_FAULT, pc);
 
         return 0;
     }
 
-    lo = as_read(as, pc, 2, 0, &has_except);
+    lo = (uint32_t)as_read(as, pc, 2, 0, &has_except);
     if (has_except)
         return raise_except(pc, CAUSE_INST_PAGE_FAULT, pc);
 
-    hi = as_read(as, pc + 2, 2, 0, &has_except);
+    hi = (uint32_t)as_read(as, pc + 2, 2, 0, &has_except);
     if (has_except)
         return raise_except(pc, CAUSE_INST_PAGE_FAULT, pc);
 
@@ -55,7 +55,7 @@ fetch(address_space *as, uint64_t pc, uint32_t *inst)
 int
 main(void)
 {
-    int i;
+    uint64_t i;
     device_t *rom;
     device_t *flash;
     uint64_t pc = 0x1000;

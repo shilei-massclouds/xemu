@@ -65,13 +65,13 @@ cpu_get_clock(void)
 static inline uint64_t
 muldiv64(uint64_t a, uint32_t b, uint32_t c)
 {
-    return (__int128_t)a * b / c;
+    return (uint64_t)((__int128_t)a * b / c);
 }
 
 uint64_t
 cpu_read_rtc(void)
 {
-    return muldiv64(cpu_get_clock(),
+    return muldiv64((uint64_t)cpu_get_clock(),
                     XEMU_CLINT_TIMEBASE_FREQ,
                     NANOSECONDS_PER_SECOND);
 }
@@ -103,6 +103,6 @@ getch(void)
 uint8_t
 getch(void)
 {
-    return getchar();
+    return (uint8_t)getchar();
 }
 #endif

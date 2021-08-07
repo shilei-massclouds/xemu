@@ -25,7 +25,7 @@ typedef struct _ram_t
 } ram_t;
 
 static uint8_t *
-_ram_ptr(void *dev, uint32_t addr)
+_ram_ptr(void *dev, uint64_t addr)
 {
     uint32_t pd_idx;
     uint32_t pt_idx;
@@ -34,7 +34,7 @@ _ram_ptr(void *dev, uint32_t addr)
 
     ram_t *ram = (ram_t *) dev;
 
-    pd_idx = (addr >> 22);
+    pd_idx = (uint32_t) (addr >> 22);
     if (ram->_pg[pd_idx] == 0)
         ram->_pg[pd_idx] = (uint64_t) calloc(PT_NUM, sizeof(uint64_t));
     pd = (uint64_t *) ram->_pg[pd_idx];

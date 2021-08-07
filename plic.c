@@ -62,7 +62,7 @@ plic_signal(uint32_t id)
     _bit_pos(id, &index, &offset);
 
     pthread_mutex_lock(&plic->_mutex);
-    plic->pending[index] |= (1 << offset);
+    plic->pending[index] |= (1U << offset);
     pthread_mutex_unlock(&plic->_mutex);
 }
 
@@ -78,7 +78,7 @@ clear_pending_bit(uint32_t id)
     _bit_pos(id, &index, &offset);
 
     pthread_mutex_lock(&plic->_mutex);
-    plic->pending[index] &= ~(1 << offset);
+    plic->pending[index] &= ~(1U << offset);
     pthread_mutex_unlock(&plic->_mutex);
 }
 
@@ -225,8 +225,8 @@ first_one(uint32_t bits)
 uint32_t
 plic_interrupt(void)
 {
-    int i;
-    int ret = 0;
+    uint32_t i;
+    uint32_t ret = 0;
 
     uint32_t next_priv = intr_next_priv(EXTERNAL_INTR_TYPE, priv());
 

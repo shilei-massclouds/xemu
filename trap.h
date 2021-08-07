@@ -23,7 +23,7 @@ handle_interrupt(uint64_t pc);
 static inline uint32_t
 except_bit_flag(uint64_t cause)
 {
-    return (1 << cause);
+    return (1U << cause);
 }
 
 static inline uint32_t

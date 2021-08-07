@@ -85,21 +85,21 @@ execute(address_space *as,
 
     case LB:
         addr = reg[rs1] + imm;
-        rd_val = (int8_t)as_read(as, addr, 1, 0, &has_except);
+        rd_val = (uint64_t)(int8_t)as_read(as, addr, 1, 0, &has_except);
         if (has_except)
             ret_pc = raise_except(pc, CAUSE_LOAD_PAGE_FAULT, addr);
         break;
 
     case LH:
         addr = reg[rs1] + imm;
-        rd_val = (int16_t)as_read(as, addr, 2, 0, &has_except);
+        rd_val = (uint64_t)(int16_t)as_read(as, addr, 2, 0, &has_except);
         if (has_except)
             ret_pc = raise_except(pc, CAUSE_LOAD_PAGE_FAULT, addr);
         break;
 
     case LW:
         addr = reg[rs1] + imm;
-        rd_val = (int32_t)as_read(as, addr, 4, 0, &has_except);
+        rd_val = (uint64_t)(int32_t)as_read(as, addr, 4, 0, &has_except);
         if (has_except)
             ret_pc = raise_except(pc, CAUSE_LOAD_PAGE_FAULT, addr);
         break;
@@ -113,21 +113,21 @@ execute(address_space *as,
 
     case LBU:
         addr = reg[rs1] + imm;
-        rd_val = (uint8_t)as_read(as, addr, 1, 0, &has_except);
+        rd_val = (uint64_t)(uint8_t)as_read(as, addr, 1, 0, &has_except);
         if (has_except)
             ret_pc = raise_except(pc, CAUSE_LOAD_PAGE_FAULT, addr);
         break;
 
     case LHU:
         addr = reg[rs1] + imm;
-        rd_val = (uint16_t)as_read(as, addr, 2, 0, &has_except);
+        rd_val = (uint64_t)(uint16_t)as_read(as, addr, 2, 0, &has_except);
         if (has_except)
             ret_pc = raise_except(pc, CAUSE_LOAD_PAGE_FAULT, addr);
         break;
 
     case LWU:
         addr = reg[rs1] + imm;
-        rd_val = (uint32_t)as_read(as, addr, 4, 0, &has_except);
+        rd_val = (uint64_t)(uint32_t)as_read(as, addr, 4, 0, &has_except);
         if (has_except)
             ret_pc = raise_except(pc, CAUSE_LOAD_PAGE_FAULT, addr);
         break;
@@ -165,7 +165,7 @@ execute(address_space *as,
         break;
 
     case ADDIW:
-        rd_val = TO_WORD((int32_t)reg[rs1] + imm);
+        rd_val = TO_WORD(((uint64_t)((int32_t)reg[rs1] + (int32_t)imm)));
         break;
 
     case ADD:
@@ -241,19 +241,19 @@ execute(address_space *as,
         break;
 
     case SRAI:
-        rd_val = ((int64_t)reg[rs1]) >> BITS(imm, 5, 0);
+        rd_val = (uint64_t)(((int64_t)reg[rs1]) >> BITS(imm, 5, 0));
         break;
 
     case SRAIW:
-        rd_val = (int64_t)(((int32_t)reg[rs1]) >> BITS(imm, 5, 0));
+        rd_val = (uint64_t)(int64_t)(((int32_t)reg[rs1]) >> BITS(imm, 5, 0));
         break;
 
     case SRA:
-        rd_val = ((int64_t)reg[rs1]) >> BITS(reg[rs2], 5, 0);
+        rd_val = (uint64_t)(((int64_t)reg[rs1]) >> BITS(reg[rs2], 5, 0));
         break;
 
     case SRAW:
-        rd_val = (int64_t)(((int32_t)reg[rs1]) >> BITS(reg[rs2], 5, 0));
+        rd_val = (uint64_t)(int64_t)(((int32_t)reg[rs1]) >> BITS(reg[rs2], 5, 0));
         break;
 
     case ORI:
@@ -334,28 +334,28 @@ execute(address_space *as,
         break;
 
     case MUL:
-        rd_val = (int64_t)reg[rs1] * (int64_t)reg[rs2];
+        rd_val = (uint64_t)((int64_t)reg[rs1] * (int64_t)reg[rs2]);
         break;
 
     case MULH:
-        rd_val = ((__int128_t)reg[rs1] * (__int128_t)reg[rs2]) >> 64;
+        rd_val = (uint64_t)(((__int128_t)reg[rs1] * (__int128_t)reg[rs2]) >> 64);
         break;
 
     case MULHSU:
-        rd_val = ((__int128_t)reg[rs1] * reg[rs2]) >> 64;
+        rd_val = (uint64_t)(((__int128_t)reg[rs1] * reg[rs2]) >> 64);
         break;
 
     case MULHU:
-        rd_val = ((__uint128_t)reg[rs1] *(__uint128_t) reg[rs2]) >> 64;
+        rd_val = (uint64_t)(((__uint128_t)reg[rs1] *(__uint128_t) reg[rs2]) >> 64);
         break;
 
     case DIV:
         if (reg[rs2] == 0)
-            rd_val = -1;
+            rd_val = (uint64_t)-1;
         else if (((int64_t)reg[rs2] == -1) && (reg[rs1] == (1UL << 63)))
             rd_val = (1UL << 63);
         else
-            rd_val = (int64_t)reg[rs1] / (int64_t)reg[rs2];
+            rd_val = (uint64_t)((int64_t)reg[rs1] / (int64_t)reg[rs2]);
 
         break;
 
@@ -369,11 +369,11 @@ execute(address_space *as,
 
     case REM:
         if (reg[rs2] == 0)
-            rd_val = (int64_t)reg[rs1];
+            rd_val = (uint64_t)(int64_t)reg[rs1];
         else if (((int64_t)reg[rs2] == -1) && (reg[rs1] == (1UL << 63)))
             rd_val = 0;
         else
-            rd_val = (int64_t)reg[rs1] % (int64_t)reg[rs2];
+            rd_val = (uint64_t)((int64_t)reg[rs1] % (int64_t)reg[rs2]);
 
         break;
 
@@ -386,16 +386,16 @@ execute(address_space *as,
         break;
 
     case MULW:
-        rd_val = TO_WORD((int32_t)reg[rs1] * (int32_t)reg[rs2]);
+        rd_val = TO_WORD(((int32_t)reg[rs1] * (int32_t)reg[rs2]));
         break;
 
     case DIVW:
         if ((int32_t)reg[rs2] == 0)
-            rd_val = (int32_t) -1;
+            rd_val = (uint64_t)(int32_t) -1;
         else if (((int32_t)reg[rs2] == -1) && ((uint32_t)reg[rs1] == (1 << 31)))
-            rd_val = (int32_t)(1 << 31);
+            rd_val = (uint64_t)(int32_t)(1 << 31);
         else
-            rd_val = TO_WORD((int32_t)reg[rs1] / (int32_t)reg[rs2]);
+            rd_val = TO_WORD(((int32_t)reg[rs1] / (int32_t)reg[rs2]));
 
         break;
 
@@ -409,11 +409,11 @@ execute(address_space *as,
 
     case REMW:
         if ((int32_t)reg[rs2] == 0)
-            rd_val = (int32_t)reg[rs1];
+            rd_val = (uint64_t)(int32_t)reg[rs1];
         else if (((int32_t)reg[rs2] == -1) && ((uint32_t)reg[rs1] == (1 << 31)))
             rd_val = 0;
         else
-            rd_val = TO_WORD((int32_t)reg[rs1] % (int32_t)reg[rs2]);
+            rd_val = TO_WORD(((int32_t)reg[rs1] % (int32_t)reg[rs2]));
 
         break;
 
@@ -482,7 +482,7 @@ execute(address_space *as,
         break;
 
     case LR_W:
-        rd_val = (int32_t)as_read(as, reg[rs1], 4, PARAMS_LR_SC, &has_except);
+        rd_val = (uint64_t)(int32_t)as_read(as, reg[rs1], 4, PARAMS_LR_SC, &has_except);
         if (has_except)
             ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
@@ -549,7 +549,7 @@ execute(address_space *as,
 
     case FSW:
         addr = reg[rs1] + imm;
-        as_write(as, addr, 4, (float)reg[rs2], 0, &has_except);
+        as_write(as, addr, 4, (uint64_t)(float)reg[rs2], 0, &has_except);
         if (has_except)
             ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, addr);
         break;
@@ -580,7 +580,7 @@ execute(address_space *as,
 
     if (!has_except) {
         if (is_frd)
-            freg[rd] = frd_val;
+            freg[rd] = (uint64_t)frd_val;
         else if (rd)
             reg[rd] = rd_val;
     }

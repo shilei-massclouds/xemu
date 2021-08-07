@@ -255,7 +255,7 @@ _handle_read(virtio_blk_t *blk, vq_request_t *req, uint64_t sector)
     if (fp == NULL)
         panic("%s: cannot open file %s\n", __func__, blk->filename);
 
-    if (fseek(fp, sector * 512, SEEK_SET) < 0)
+    if (fseek(fp, (long)sector * 512, SEEK_SET) < 0)
         panic("%s: cannot seek sector(%u) of file %s\n",
               __func__, sector, blk->filename);
 
@@ -292,7 +292,7 @@ _handle_write(virtio_blk_t *blk, vq_request_t *req, uint64_t sector)
     if (fp == NULL)
         panic("%s: cannot open file %s\n", __func__, blk->filename);
 
-    if (fseek(fp, sector * 512, SEEK_SET) < 0)
+    if (fseek(fp, (long) sector * 512, SEEK_SET) < 0)
         panic("%s: cannot seek sector(%u) of file %s\n",
               __func__, sector, blk->filename);
 

@@ -107,14 +107,14 @@ virtio_mmio_write(void *dev, uint64_t addr, uint64_t data, size_t size,
         break;
 
     case VIRTIO_MMIO_GUEST_PAGE_SIZE:
-        vdev->guest_page_shift = ctz32(data);
+        vdev->guest_page_shift = (uint32_t)ctz32((uint32_t)data);
         if (vdev->guest_page_shift > 31)
             vdev->guest_page_shift = 0;
         break;
 
     case VIRTIO_MMIO_QUEUE_SEL:
         if (data < VIRTIO_QUEUE_MAX)
-            vdev->queue_sel = data;
+            vdev->queue_sel = (uint16_t)data;
         break;
 
     case VIRTIO_MMIO_QUEUE_PFN:
@@ -126,11 +126,11 @@ virtio_mmio_write(void *dev, uint64_t addr, uint64_t data, size_t size,
         break;
 
     case VIRTIO_MMIO_QUEUE_NUM:
-        vdev->vq->vring.num = data;
+        vdev->vq->vring.num = (uint32_t)data;
         break;
 
     case VIRTIO_MMIO_QUEUE_ALIGN:
-        vdev->vq->vring.align = data;
+        vdev->vq->vring.align = (uint32_t)data;
         break;
 
     case VIRTIO_MMIO_QUEUE_NOTIFY:
@@ -139,7 +139,7 @@ virtio_mmio_write(void *dev, uint64_t addr, uint64_t data, size_t size,
         break;
 
     case VIRTIO_MMIO_INTERRUPT_ACK:
-        vdev->isr &= ~data;
+        vdev->isr &= (uint8_t)(~data);
         break;
 
     case VIRTIO_MMIO_STATUS:

@@ -154,7 +154,7 @@ _read(uint32_t addr, bool *has_except)
 
     case CYCLE:
     case INSTRET:
-        return cpu_get_host_ticks();
+        return (uint64_t)cpu_get_host_ticks();
 
     /* 0xf11 ~ 0xf14 */
     case MVENDORID:

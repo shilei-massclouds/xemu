@@ -46,7 +46,7 @@ static inline uint32_t
 intr_bit_flag(intr_type_t type, uint32_t priv)
 {
     uint32_t irq = intr_cause(type, priv) & 0xF;
-    return (1 << irq);
+    return (1U << irq);
 }
 
 static inline uint32_t

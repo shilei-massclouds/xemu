@@ -16,7 +16,7 @@ const char* _abi_names[32] = {
 };
 
 const char *
-reg_name(int index)
+reg_name(uint32_t index)
 {
     return _abi_names[index];
 }

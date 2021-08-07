@@ -97,7 +97,7 @@ flash_add_file(device_t *dev, const char *filename, size_t base)
     if (base < flash->mem_size)
         panic("%s: bad base %x\n", __func__, base);
 
-    size = ROUND_UP((base + info.st_size), 8);
+    size = ROUND_UP((base + (size_t)info.st_size), 8);
 
     if (size > FLASH_ADDRESS_SPACE_SIZE)
         panic("%s: bad size %x\n", __func__, size);
@@ -112,7 +112,7 @@ flash_add_file(device_t *dev, const char *filename, size_t base)
         flash->mem_ptr = NULL;
     }
 
-    if (fread(ptr + base, 1, info.st_size, fp) != info.st_size)
+    if (fread(ptr + base, 1, (size_t)info.st_size, fp) != info.st_size)
         panic("%s: read file failed!\n", __func__);
 
     flash->mem_size = size;
@@ -124,6 +124,6 @@ flash_add_file(device_t *dev, const char *filename, size_t base)
 
     /* Recode file-size into (base - 8) */
     if (base) {
-        *((uint64_t *)(ptr + base - 8)) = info.st_size;
+        *((uint64_t *)(ptr + base - 8)) = (uint64_t)info.st_size;
     }
 }

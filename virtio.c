@@ -15,7 +15,7 @@ vring_avail_idx(vqueue_t *vq)
 {
     vring_t *vring = (vring_t *)vq;
     uint64_t pa = vring->avail + offsetof(vring_avail_t, idx);
-    return as_read_nommu(NULL, pa, 2, 0);
+    return (uint16_t)as_read_nommu(NULL, pa, 2, 0);
 }
 
 static bool
@@ -29,7 +29,7 @@ vring_avail_ring(vqueue_t *vq, int i)
 {
     vring_t *vring = (vring_t *)vq;
     uint64_t pa = vring->avail + offsetof(vring_avail_t, ring[i]);
-    return as_read_nommu(NULL, pa, 2, 0);
+    return (uint16_t)as_read_nommu(NULL, pa, 2, 0);
 }
 
 static int
@@ -37,7 +37,7 @@ vqueue_get_head(vqueue_t *vq, uint32_t idx, uint32_t *head)
 {
     /* Grab the next descriptor number they're advertising, and increment
      * the index we've seen. */
-    *head = vring_avail_ring(vq, idx % vq->vring.num);
+    *head = vring_avail_ring(vq, (int)(idx % vq->vring.num));
 
     /* If their number is silly, that's a fatal mistake. */
     if (*head >= vq->vring.num)

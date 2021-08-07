@@ -79,7 +79,7 @@ uart_read(void *dev, uint64_t addr, size_t size, params_t params)
     switch (addr)
     {
     case UART_RBR:  /* 0 */
-        uart->lsr &= ~(UART_LSR_DR | UART_LSR_BI);
+        uart->lsr &= (uint8_t)(~(UART_LSR_DR | UART_LSR_BI));
 
         if (uart->ier & UART_IER_THRI)
             uart->iir = UART_IIR_THRI;
@@ -134,7 +134,7 @@ uart_write(void *dev, uint64_t addr, uint64_t data, size_t size,
     {
     case UART_THR:  /* 0 */
         if (uart->lcr & UART_LCR_DLAB) {
-            uart->divider = (uart->divider & 0xFF00) | (data & 0xFF);
+            uart->divider = (uint16_t)((uart->divider & 0xFF00) | (data & 0xFF));
         } else {
             uart->thr_pending = false;
             putchar((uint8_t)data);
@@ -144,7 +144,7 @@ uart_write(void *dev, uint64_t addr, uint64_t data, size_t size,
 
     case UART_IER:  /* 1 */
         if (uart->lcr & UART_LCR_DLAB) {
-            uart->divider = ((data & 0xFF) << 8) | (uart->divider & 0x00FF);
+            uart->divider = (uint16_t)(((data & 0xFF) << 8) | (uart->divider & 0x00FF));
         } else {
             bool changed = (uart->ier ^ data) & 0x0f;
             uart->ier = (uint8_t)data;

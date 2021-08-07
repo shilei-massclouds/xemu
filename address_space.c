@@ -143,7 +143,7 @@ as_read_blob(uint64_t addr, size_t size, uint8_t *data)
     }
 
     while (size) {
-        byte = as_read_nommu(NULL, addr, 1, 0);
+        byte = (uint8_t) as_read_nommu(NULL, addr, 1, 0);
         memcpy(data, &byte, 1);
         size--;
         addr++;

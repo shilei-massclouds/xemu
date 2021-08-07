@@ -148,7 +148,7 @@
 #define VIRTIO_F_NOTIFY_ON_EMPTY    0x01000000
 
 /* Can the device handle any descriptor layout? */
-#define VIRTIO_F_ANY_LAYOUT         0x08000000
+#define VIRTIO_F_ANY_LAYOUT         0x08000000U
 
 /* We support indirect buffer descriptors */
 #define VIRTIO_RING_F_INDIRECT_DESC 0x10000000
