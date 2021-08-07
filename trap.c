@@ -109,7 +109,7 @@ handle_interrupt(uint64_t pc)
             uint32_t irq_bit = intr_bit_flag(type, S_MODE);
             if (sie & irq_bit) {
                 csr_update(SIP, irq_bit, CSR_OP_SET, &has_except);
-                pc = trap_enter(pc, next_priv, intr_cause(type, priv), 0);
+                pc = trap_enter(pc, next_priv, intr_cause(type, next_priv), 0);
             }
         }
     } else {
@@ -119,7 +119,7 @@ handle_interrupt(uint64_t pc)
             uint32_t irq_bit = intr_bit_flag(type, M_MODE);
             if (mie & irq_bit) {
                 csr_update(MIP, irq_bit, CSR_OP_SET, &has_except);
-                pc = trap_enter(pc, next_priv, intr_cause(type, priv), 0);
+                pc = trap_enter(pc, next_priv, intr_cause(type, next_priv), 0);
             }
         }
     }
