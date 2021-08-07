@@ -10,6 +10,7 @@
 #include "util.h"
 #include "trap.h"
 
+
 uint64_t
 execute(address_space *as,
         uint64_t pc,
@@ -86,77 +87,77 @@ execute(address_space *as,
         addr = reg[rs1] + imm;
         rd_val = (int8_t)as_read(as, addr, 1, 0, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_LOAD_PAGE_FAULT, addr);
+            ret_pc = raise_except(pc, CAUSE_LOAD_PAGE_FAULT, addr);
         break;
 
     case LH:
         addr = reg[rs1] + imm;
         rd_val = (int16_t)as_read(as, addr, 2, 0, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_LOAD_PAGE_FAULT, addr);
+            ret_pc = raise_except(pc, CAUSE_LOAD_PAGE_FAULT, addr);
         break;
 
     case LW:
         addr = reg[rs1] + imm;
         rd_val = (int32_t)as_read(as, addr, 4, 0, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_LOAD_PAGE_FAULT, addr);
+            ret_pc = raise_except(pc, CAUSE_LOAD_PAGE_FAULT, addr);
         break;
 
     case LD:
         addr = reg[rs1] + imm;
         rd_val = as_read(as, addr, 8, 0, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_LOAD_PAGE_FAULT, addr);
+            ret_pc = raise_except(pc, CAUSE_LOAD_PAGE_FAULT, addr);
         break;
 
     case LBU:
         addr = reg[rs1] + imm;
         rd_val = (uint8_t)as_read(as, addr, 1, 0, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_LOAD_PAGE_FAULT, addr);
+            ret_pc = raise_except(pc, CAUSE_LOAD_PAGE_FAULT, addr);
         break;
 
     case LHU:
         addr = reg[rs1] + imm;
         rd_val = (uint16_t)as_read(as, addr, 2, 0, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_LOAD_PAGE_FAULT, addr);
+            ret_pc = raise_except(pc, CAUSE_LOAD_PAGE_FAULT, addr);
         break;
 
     case LWU:
         addr = reg[rs1] + imm;
         rd_val = (uint32_t)as_read(as, addr, 4, 0, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_LOAD_PAGE_FAULT, addr);
+            ret_pc = raise_except(pc, CAUSE_LOAD_PAGE_FAULT, addr);
         break;
 
     case SB:
         addr = reg[rs1] + imm;
         as_write(as, addr, 1, reg[rs2], 0, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, addr);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, addr);
         break;
 
     case SH:
         addr = reg[rs1] + imm;
         as_write(as, addr, 2, reg[rs2], 0, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, addr);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, addr);
         break;
 
     case SW:
         addr = reg[rs1] + imm;
         as_write(as, addr, 4, reg[rs2], 0, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, addr);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, addr);
         break;
 
     case SD:
         addr = reg[rs1] + imm;
         as_write(as, addr, 8, reg[rs2], 0, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, addr);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, addr);
         break;
 
     case ADDI:
@@ -278,7 +279,7 @@ execute(address_space *as,
         break;
 
     case ECALL:
-        ret_pc = trap_enter(pc, (CAUSE_ECALL_FROM_U_MODE + priv), 0);
+        ret_pc = raise_except(pc, (CAUSE_ECALL_FROM_U_MODE + priv), 0);
         break;
 
     case URET:
@@ -296,7 +297,7 @@ execute(address_space *as,
     case CSRRW:
         rd_val = csr_update(csr_addr, reg[rs1], CSR_OP_WRITE, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_ILLEGAL_INST, 0);
+            ret_pc = raise_except(pc, CAUSE_ILLEGAL_INST, 0);
 
         if (csr_addr == 0)
             fprintf(stderr, "#DEBUG:[%lx]: %lx\n", pc, reg[rs1]);
@@ -305,31 +306,31 @@ execute(address_space *as,
     case CSRRS:
         rd_val = csr_update(csr_addr, reg[rs1], CSR_OP_SET, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_ILLEGAL_INST, 0);
+            ret_pc = raise_except(pc, CAUSE_ILLEGAL_INST, 0);
         break;
 
     case CSRRC:
         rd_val = csr_update(csr_addr, reg[rs1], CSR_OP_CLEAR, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_ILLEGAL_INST, 0);
+            ret_pc = raise_except(pc, CAUSE_ILLEGAL_INST, 0);
         break;
 
     case CSRRWI:
         rd_val = csr_update(csr_addr, imm, CSR_OP_WRITE, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_ILLEGAL_INST, 0);
+            ret_pc = raise_except(pc, CAUSE_ILLEGAL_INST, 0);
         break;
 
     case CSRRSI:
         rd_val = csr_update(csr_addr, imm, CSR_OP_SET, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_ILLEGAL_INST, 0);
+            ret_pc = raise_except(pc, CAUSE_ILLEGAL_INST, 0);
         break;
 
     case CSRRCI:
         rd_val = csr_update(csr_addr, imm, CSR_OP_CLEAR, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_ILLEGAL_INST, 0);
+            ret_pc = raise_except(pc, CAUSE_ILLEGAL_INST, 0);
         break;
 
     case MUL:
@@ -427,113 +428,113 @@ execute(address_space *as,
     case LR_D:
         rd_val = as_read(as, reg[rs1], 8, PARAMS_LR_SC, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case SC_D:
         rd_val = as_write(as, reg[rs1], 8, reg[rs2], PARAMS_LR_SC, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_ADD_D:
         rd_val = as_write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_ADD, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_SWAP_D:
         rd_val = as_write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_SWAP, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_XOR_D:
         rd_val = as_write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_XOR, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_OR_D:
         rd_val = as_write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_OR, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_AND_D:
         rd_val = as_write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_AND, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_MIN_D:
         rd_val = as_write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_MIN, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_MAX_D:
         rd_val = as_write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_MAX, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_MINU_D:
         rd_val = as_write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_MINU, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_MAXU_D:
         rd_val = as_write(as, reg[rs1], 8, reg[rs2], PARAMS_AMO_MAXU, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
 
     case LR_W:
         rd_val = (int32_t)as_read(as, reg[rs1], 4, PARAMS_LR_SC, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case SC_W:
         rd_val = as_write(as, reg[rs1], 4, reg[rs2], PARAMS_LR_SC, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_ADD_W:
         rd_val = as_write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_ADD, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_SWAP_W:
         rd_val = as_write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_SWAP, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_XOR_W:
         rd_val = as_write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_XOR, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_OR_W:
         rd_val = as_write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_OR, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_AND_W:
         rd_val = as_write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_AND, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_MIN_W:
         rd_val = as_write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_MIN, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_MAX_W:
         rd_val = as_write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_MAX, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_MINU_W:
         rd_val = as_write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_MINU, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
     case AMO_MAXU_W:
         rd_val = as_write(as, reg[rs1], 4, reg[rs2], PARAMS_AMO_MAXU, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, reg[rs1]);
         break;
 
     /* Floating-point instructions */
@@ -542,7 +543,7 @@ execute(address_space *as,
         addr = reg[rs1] + imm;
         frd_val = (float)as_read(as, addr, 4, 0, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, addr);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, addr);
         is_frd = true;
         break;
 
@@ -550,7 +551,7 @@ execute(address_space *as,
         addr = reg[rs1] + imm;
         as_write(as, addr, 4, (float)reg[rs2], 0, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, addr);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, addr);
         break;
 
     case FMV_W_X:
@@ -562,7 +563,7 @@ execute(address_space *as,
         addr = reg[rs1] + imm;
         frd_val = (double)as_read(as, addr, 8, 0, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, addr);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, addr);
         is_frd = true;
         break;
 
@@ -570,7 +571,7 @@ execute(address_space *as,
         addr = reg[rs1] + imm;
         as_write(as, addr, 8, freg[rs2], 0, &has_except);
         if (has_except)
-            ret_pc = trap_enter(pc, CAUSE_STORE_PAGE_FAULT, addr);
+            ret_pc = raise_except(pc, CAUSE_STORE_PAGE_FAULT, addr);
         break;
 
     default:

@@ -6,19 +6,12 @@
 #include "device.h"
 
 uint64_t
-trap_enter(uint64_t pc, uint64_t cause, uint64_t tval)
+trap_enter(uint64_t pc, uint32_t next_priv, uint64_t cause, uint64_t tval)
 {
     uint64_t ret;
-    uint64_t mideleg = 0;
-    uint64_t medeleg = 0;
     bool has_except = false;
 
-    if (BIT(cause, 63))
-        mideleg = BIT(csr_read(MIDELEG, &has_except), BITS(cause, 3, 0));
-    else
-        medeleg = BIT(csr_read(MEDELEG, &has_except), cause);
-
-    if (mideleg || medeleg) {
+    if (next_priv == S_MODE) {
         /* Handle trap in S_MODE */
         uint64_t mode_bit = (priv == U_MODE) ? 0UL : 1UL;
         uint64_t sstatus = csr_read(SSTATUS, &has_except);
@@ -92,11 +85,8 @@ trap_exit(op_t op)
 uint64_t
 handle_interrupt(uint64_t pc)
 {
-    bool deleg = false;
+    uint32_t next_priv;
     bool has_except = false;
-    uint32_t irq = 0;
-    uint32_t irq_bit = 0;
-    uint64_t cause = 0;
     uint32_t eid = 0;
     intr_type_t type = INTR_TYPE_NONE;
 
@@ -110,41 +100,28 @@ handle_interrupt(uint64_t pc)
     if (!type)
         return pc;
 
-    cause = intr_cause(type, priv);
-    irq = cause & 0xF;
-
-    irq_bit = (1UL << irq);
-
     /* Target */
-    if (priv != M_MODE) {
-        uint64_t mideleg = csr_read(MIDELEG, &has_except);
-        deleg = mideleg & irq_bit;
-    }
-
-    bool enable = false;
-    if (deleg) {
+    next_priv = intr_next_priv(type, priv);
+    if (next_priv == S_MODE) {
         uint64_t sstatus = csr_read(SSTATUS, &has_except);
-        enable = sstatus & BIT_SIE;
-        if (enable) {
+        if (sstatus & BIT_SIE) {
             uint64_t sie = csr_read(SIE, &has_except);
-            enable = sie & irq_bit;
+            uint32_t irq_bit = intr_bit_flag(type, S_MODE);
+            if (sie & irq_bit) {
+                csr_update(SIP, irq_bit, CSR_OP_SET, &has_except);
+                pc = trap_enter(pc, next_priv, intr_cause(type, priv), 0);
+            }
         }
     } else {
         uint64_t mstatus = csr_read(MSTATUS, &has_except);
-        enable = mstatus & BIT_MIE;
-        if (enable) {
+        if (mstatus & BIT_MIE) {
             uint64_t mie = csr_read(MIE, &has_except);
-            enable = mie & irq_bit;
+            uint32_t irq_bit = intr_bit_flag(type, M_MODE);
+            if (mie & irq_bit) {
+                csr_update(MIP, irq_bit, CSR_OP_SET, &has_except);
+                pc = trap_enter(pc, next_priv, intr_cause(type, priv), 0);
+            }
         }
-    }
-
-    if (enable) {
-        if (deleg)
-            csr_update(SIP, irq_bit, CSR_OP_SET, &has_except);
-        else
-            csr_update(MIP, irq_bit, CSR_OP_SET, &has_except);
-
-        pc = trap_enter(pc, cause, 0);
     }
 
     return pc;

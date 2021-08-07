@@ -76,13 +76,7 @@ cpu_read_rtc(void)
                     NANOSECONDS_PER_SECOND);
 }
 
-uint8_t
-getch(void)
-{
-    return getchar();
-}
-
-/*
+#if 0
 uint8_t
 getch(void)
 {
@@ -105,4 +99,10 @@ getch(void)
 
     return c;
 }
-*/
+#else
+uint8_t
+getch(void)
+{
+    return getchar();
+}
+#endif

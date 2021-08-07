@@ -153,7 +153,8 @@ _read(uint32_t addr, bool *has_except)
 
     case PMPADDR16...PMPADDR63:
     case MHPMCOUNTER3...MHPMCOUNTER31:
-        *has_except = true;
+        if (has_except)
+            *has_except = true;
         break;
 
     default:

@@ -22,7 +22,7 @@ typedef enum _intr_type_t
 static inline uint64_t
 intr_cause(intr_type_t type, uint32_t priv)
 {
-    uint32_t offset;
+    uint64_t offset;
 
     if (!type || type >= INTR_TYPE_LIMIT)
         panic("%s: bad type (%u)\n", __func__, type);
@@ -40,6 +40,26 @@ intr_cause(intr_type_t type, uint32_t priv)
     }
 
     return 0;
+}
+
+static inline uint32_t
+intr_bit_flag(intr_type_t type, uint32_t priv)
+{
+    uint32_t irq = intr_cause(type, priv) & 0xF;
+    return (1 << irq);
+}
+
+static inline uint32_t
+intr_next_priv(intr_type_t type, uint32_t priv)
+{
+    if (priv != M_MODE) {
+        uint64_t mideleg = csr_read(MIDELEG, NULL);
+        uint32_t irq_bit = intr_bit_flag(type, S_MODE);
+        if (mideleg & irq_bit)
+            return S_MODE;
+    }
+
+    return M_MODE;
 }
 
 #endif /* INTERRUPT_H */

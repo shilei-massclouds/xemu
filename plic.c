@@ -228,9 +228,11 @@ plic_interrupt(void)
     int i;
     int ret = 0;
 
-    uint32_t *xie = (priv == S_MODE) ? plic->sie : plic->mie;
-    uint32_t xpt = (priv == S_MODE) ? plic->spt : plic->mpt;
-    uint32_t *xcc = (priv == S_MODE) ? &plic->scc : &plic->mcc;
+    uint32_t next_priv = intr_next_priv(EXTERNAL_INTR_TYPE, priv);
+
+    uint32_t *xie = (next_priv == S_MODE) ? plic->sie : plic->mie;
+    uint32_t xpt = (next_priv == S_MODE) ? plic->spt : plic->mpt;
+    uint32_t *xcc = (next_priv == S_MODE) ? &plic->scc : &plic->mcc;
 
     pthread_mutex_lock(&plic->_mutex);
     for (i = 0; i < 5; i++) {
