@@ -189,9 +189,6 @@ csr_update(uint32_t addr, uint64_t data, csr_op_type type, bool *has_except)
     if (*has_except)
         return 0;
 
-    if (addr == MSTATUS && (data & 0xF))
-        printf("### %s: mstatus = %lx\n", __func__, data);
-
     switch (type)
     {
     case CSR_OP_WRITE:

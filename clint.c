@@ -69,7 +69,6 @@ clint_write(void *dev, uint64_t addr, uint64_t data, size_t size,
     {
     case CLINT_MSIP:
         _software_intr = (bool) data;
-        printf("++++++++++++++++ Set msip\n");
         break;
     case CLINT_MTIMECMP:
         pthread_mutex_lock(&clint->_mutex);
@@ -77,13 +76,6 @@ clint_write(void *dev, uint64_t addr, uint64_t data, size_t size,
         clint->mtimecmp = data;
 
         if (cpu_read_rtc() > clint->mtimecmp) {
-            /*
-            printf("+++ +++ %s: Set true (%lx, %lx)\n",
-                   __func__,
-                   cpu_read_rtc(),
-                   clint->mtimecmp);
-                   */
-
             _timer_intr = true;
         } else {
             clint->timer_running = true;
@@ -118,17 +110,8 @@ _routine(void *arg)
             next_time.tv_sec = now.tv_sec + 0;
             next_time.tv_nsec = (now.tv_usec + 1) * 1000;
             pthread_cond_timedwait(&clint->_cond, &clint->_mutex, &next_time);
-            /*
-            if (clint->mtimecmp != -1UL)
-                printf("+++ +++ %s: (%lx, %lx, %lx)\n",
-                       __func__,
-                       current_ticks(),
-                       clint->mtimecmp,
-                       get_clock_realtime());
-                       */
         }
 
-        //printf("+++ +++ %s: Set true\n", __func__);
         _timer_intr = true;
         clint->timer_running = false;
         pthread_mutex_unlock(&clint->_mutex);
