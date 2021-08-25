@@ -15,6 +15,7 @@
 #include "mmu.h"
 #include "trap.h"
 #include "trace.h"
+#include "system_map.h"
 #include "virtio.h"
 
 #define VIRTIO_MMIO_AS_START_0  0x0000000010001000UL
@@ -61,6 +62,9 @@ main(void)
     uint64_t pc = 0x1000;
 
     printf("[XEMU startup ...]\n");
+
+    setup_system_map();
+    setup_trace_table();
 
     /* Init root address space */
     init_address_space(&root_as,

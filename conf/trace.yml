@@ -1,0 +1,7 @@
+#
+# trace.yml
+#
+
+_start_kernel:
+    is_pa: true
+    nargs: 2

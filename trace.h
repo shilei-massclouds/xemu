@@ -27,4 +27,10 @@ trace_execute(uint64_t   pc,
               uint64_t   imm,
               uint32_t   csr_addr);
 
+void
+trace(uint64_t pc);
+
+void
+setup_trace_table(void);
+
 #endif /* _TRACE_H_ */
