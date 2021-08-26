@@ -9,7 +9,6 @@
 #include "csr.h"
 #include "util.h"
 #include "trap.h"
-#include "trace.h"
 
 
 uint64_t
@@ -585,8 +584,6 @@ execute(address_space *as,
         else if (rd)
             reg[rd] = rd_val;
     }
-
-    trace(pc);
 
     return ret_pc;
 }

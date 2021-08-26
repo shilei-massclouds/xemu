@@ -4,9 +4,10 @@
 
 _start_kernel:
     disabled: true
-    is_pa: true
+    no_mmu: true
     nargs: 2
 
 setup_vm:
-    is_pa: true
+    no_mmu: true
     nargs: 1
+    stack: 0

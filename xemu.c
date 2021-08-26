@@ -118,6 +118,8 @@ main(void)
         uint64_t new_pc = 0;
         uint32_t inst = 0;
 
+        trace(pc);
+
         /* Fetch */
         next_pc = fetch(&root_as, pc, &inst);
         if (next_pc) {

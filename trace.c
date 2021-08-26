@@ -12,6 +12,7 @@
 #include "csr.h"
 #include "yaml.h"
 #include "system_map.h"
+#include "address_space.h"
 
 static int trace_decode_en;
 static int trace_execute_en = 0;
@@ -74,8 +75,9 @@ typedef struct _trace_item {
     const char *name;
     bool        disabled;
     uint64_t    addr;
-    bool        is_pa;
+    bool        no_mmu;
     int         nargs;
+    int         stack;
 } trace_item;
 
 static int trace_num;
@@ -92,6 +94,17 @@ _match_pc(uint64_t pc)
     return NULL;
 }
 
+static uint64_t
+_read_dword(bool no_mmu, uint64_t base, int index)
+{
+    uint64_t addr = base + ((uint64_t)index << 3);
+
+    if (no_mmu)
+        return as_read_nommu(NULL, addr, 8, 0);
+
+    return as_read(NULL, addr, 8, 0, NULL);
+}
+
 void
 trace(uint64_t pc)
 {
@@ -102,8 +115,18 @@ trace(uint64_t pc)
 
     printf("======================================\n");
     printf("%s: 0x%lx\n\n", item->name, item->addr);
+
     for (i = 0; i < item->nargs; i++)
         printf("  a%d: 0x%-16lx\n", i, reg[REG_A0+i]);
+    if (item->nargs)
+        printf("\n");
+
+    printf("  sp: 0x%lx\n", reg[REG_SP]);
+    for (i = 0; i < item->stack; i++) {
+        uint64_t value = _read_dword(item->no_mmu, reg[REG_SP], i);
+        printf("  - 0x%-16lx\n", value);
+    }
+
     printf("======================================\n");
 }
 
@@ -124,11 +147,13 @@ trace_parse_cb(TOKEN token, const char *key, const char *value)
         item = &trace_table[trace_num - 1];
         if (streq(key, "disabled")) {
             item->disabled = streq(value, "true");
-        } else if (streq(key, "is_pa")) {
-            item->is_pa = streq(value, "true");
+        } else if (streq(key, "no_mmu")) {
+            item->no_mmu = streq(value, "true");
             item->addr -= va_pa_offset;
         } else if (streq(key, "nargs")) {
             item->nargs = atoi(value);
+        } else if (streq(key, "stack")) {
+            item->stack = atoi(value);
         }
         break;
     default:

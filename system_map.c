@@ -75,7 +75,7 @@ match_in_system_map(const char *name, uint64_t *paddr)
     int i;
 
     for (i = 0; i < last; i++) {
-        if (strcmp(name, table[i].name) == 0) {
+        if (streq(name, table[i].name)) {
             *paddr = table[i].addr;
             return table[i].name;
         }

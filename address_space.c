@@ -79,7 +79,8 @@ as_read(address_space *as, uint64_t vaddr, size_t size, params_t params,
     uint64_t paddr;
 
     if (mmu(as, vaddr, &paddr) < 0) {
-        *has_except = true;
+        if (has_except)
+            *has_except = true;
         return 0;
     }
 
@@ -118,7 +119,8 @@ as_write(address_space *as, uint64_t vaddr, size_t size, uint64_t data,
     uint64_t paddr;
 
     if (mmu(as, vaddr, &paddr) < 0) {
-        *has_except = true;
+        if (has_except)
+            *has_except = true;
         return 0;
     }
 
