@@ -11,3 +11,4 @@ setup_vm:
     no_mmu: true
     nargs: 1
     stack: 0
+    exit: true

@@ -7,12 +7,18 @@
 #include <string.h>
 
 #include "util.h"
+#include "list.h"
 #include "trace.h"
 #include "regfile.h"
 #include "csr.h"
 #include "yaml.h"
 #include "system_map.h"
 #include "address_space.h"
+
+typedef struct _exit_item {
+    list_head   entry;
+    uint64_t    addr;
+} exit_item;
 
 static int trace_decode_en;
 static int trace_execute_en = 0;
@@ -78,18 +84,50 @@ typedef struct _trace_item {
     bool        no_mmu;
     int         nargs;
     int         stack;
+    bool        exit;
+    list_head   exit_list;
 } trace_item;
 
 static int trace_num;
 static trace_item trace_table[TRACE_ITEM_MAXNUM];
 
+static uint64_t
+_get_exit_addr(list_head *list)
+{
+    uint64_t addr;
+    exit_item *p;
+
+    if (list_empty(list))
+        return 0;
+
+    p = list_entry(list->prev, exit_item, entry);
+    return p->addr;
+}
+
+static void
+_pop_last_exit_addr(list_head *list)
+{
+    exit_item *p = list_entry(list->prev, exit_item, entry);
+    list_del(list->prev);
+    free(p);
+}
+
 static trace_item *
-_match_pc(uint64_t pc)
+_match_pc(uint64_t pc, uint64_t *ret_pc)
 {
     int i;
     for (i = 0; i < trace_num; i++) {
-        if (trace_table[i].addr == pc)
+        trace_item *item = trace_table + i;
+        uint64_t exit_pc = _get_exit_addr(&(item->exit_list));
+        if (exit_pc && exit_pc == pc) {
+            *ret_pc = exit_pc;
+            _pop_last_exit_addr(&(item->exit_list));
             return trace_table + i;
+        }
+
+        if (trace_table[i].addr == pc) {
+            return trace_table + i;
+        }
     }
     return NULL;
 }
@@ -109,12 +147,23 @@ void
 trace(uint64_t pc)
 {
     int i;
-    trace_item *item = _match_pc(pc);
+    char point[32];
+    uint64_t addr;
+    uint64_t exit_pc = 0;
+    trace_item *item = _match_pc(pc, &exit_pc);
     if (!item || item->disabled)
         return;
 
+    if (exit_pc) {
+        strcpy(point, "exit");
+        addr = exit_pc;
+    } else {
+        strcpy(point, "entry");
+        addr = item->addr;
+    }
+
     printf("======================================\n");
-    printf("%s: 0x%lx\n\n", item->name, item->addr);
+    printf("%s(%s): 0x%lx\n\n", item->name, point, addr);
 
     for (i = 0; i < item->nargs; i++)
         printf("  a%d: 0x%-16lx\n", i, reg[REG_A0+i]);
@@ -128,7 +177,14 @@ trace(uint64_t pc)
     }
     printf("\n");
 
-    printf("  ra: 0x%lx\n", reg[REG_RA]);
+    if (exit_pc == 0)
+        printf("  ra: 0x%lx\n", reg[REG_RA]);
+
+    if (item->exit) {
+        exit_item *p = malloc(sizeof(exit_item));
+        p->addr = reg[REG_RA];
+        list_add_tail(&(p->entry), &(item->exit_list));
+    }
 
     printf("======================================\n");
 }
@@ -145,6 +201,7 @@ trace_parse_cb(TOKEN token, const char *key, const char *value)
         item->name = match_in_system_map(key, &item->addr);
         if (item->name == NULL)
             panic("%s: bad obj %s\n", __func__, item->name);
+        INIT_LIST_HEAD(&(item->exit_list));
         break;
     case TOKEN_KV:
         item = &trace_table[trace_num - 1];
@@ -157,6 +214,8 @@ trace_parse_cb(TOKEN token, const char *key, const char *value)
             item->nargs = atoi(value);
         } else if (streq(key, "stack")) {
             item->stack = atoi(value);
+        } else if (streq(key, "exit")) {
+            item->exit = streq(value, "true");
         }
         break;
     default:
