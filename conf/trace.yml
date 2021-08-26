@@ -3,5 +3,10 @@
 #
 
 _start_kernel:
+    disabled: true
     is_pa: true
     nargs: 2
+
+setup_vm:
+    is_pa: true
+    nargs: 1

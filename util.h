@@ -5,8 +5,9 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include <stdint.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdint.h>
 
 #include "csr.h"
 
@@ -131,5 +132,11 @@ cpu_read_rtc(void);
 
 uint8_t
 getch(void);
+
+static inline bool
+streq(const char *str, const char *val)
+{
+    return (strcmp(str, val) == 0);
+}
 
 #endif /* UTIL_H */

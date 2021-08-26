@@ -14,33 +14,40 @@
 static void
 parse_line(const char *line, parse_cb cb)
 {
+    const char *begin;
     const char *end;
     char name[256] = {0};
     char value[256] = {0};
 
-    if (line == NULL || line[0] == '#')
+    if (line == NULL)
         return;
 
-    while (line[0] == ' ')
-        line++;
+    begin = line;
+    while (*begin == ' ')
+        begin++;
 
-    if (line[0] == 0)
+    if (*begin == 0 || *begin == '#')
         return;
 
-    end = strchr(line, ':');
+    end = strchr(begin, ':');
     if (end == NULL)
         return;
 
-    strncpy(name, line, (size_t)(end - line));
-    //printf("%s: object %s\n", __func__, name);
+    strncpy(name, begin, (size_t)(end - begin));
 
-    if (*(end + 1) == '\n') {
+    begin = end + 1;
+    if (*begin == '\n') {
         cb(TOKEN_OBJ, name, "");
         return;
     }
 
-    strncpy(value, end + 2, sizeof(value));
-    //printf("%s: value %s\n", __func__, value);
+    if (*begin != ' ')
+        panic("%s: bad line %s in yaml\n", __func__, line);
+
+    /* Skip space that followed ':' */
+    begin++;
+    end = strchr(begin, '\n');
+    strncpy(value, begin, (size_t)(end - begin));
     cb(TOKEN_KV, name, value);
 }
 

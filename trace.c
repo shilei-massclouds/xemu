@@ -72,6 +72,7 @@ trace_execute(uint64_t   pc,
 
 typedef struct _trace_item {
     const char *name;
+    bool        disabled;
     uint64_t    addr;
     bool        is_pa;
     int         nargs;
@@ -96,11 +97,11 @@ trace(uint64_t pc)
 {
     int i;
     trace_item *item = _match_pc(pc);
-    if (!item)
+    if (!item || item->disabled)
         return;
 
     printf("======================================\n");
-    printf("%s: %lx\n\n", item->name, item->addr);
+    printf("%s: 0x%lx\n\n", item->name, item->addr);
     for (i = 0; i < item->nargs; i++)
         printf("  a%d: 0x%-16lx\n", i, reg[REG_A0+i]);
     printf("======================================\n");
@@ -121,10 +122,12 @@ trace_parse_cb(TOKEN token, const char *key, const char *value)
         break;
     case TOKEN_KV:
         item = &trace_table[trace_num - 1];
-        if (strcmp(key, "is_pa") == 0 && strcmp(value, "true")) {
-            item->is_pa = true;
+        if (streq(key, "disabled")) {
+            item->disabled = streq(value, "true");
+        } else if (streq(key, "is_pa")) {
+            item->is_pa = streq(value, "true");
             item->addr -= va_pa_offset;
-        } else if (strcmp(key, "nargs") == 0) {
+        } else if (streq(key, "nargs")) {
             item->nargs = atoi(value);
         }
         break;
