@@ -86,6 +86,7 @@ uint64_t
 handle_interrupt(uint64_t pc)
 {
     uint32_t next_priv;
+    uint64_t ret_pc = 0;
     bool has_except = false;
     uint32_t eid = 0;
     intr_type_t type = INTR_TYPE_NONE;
@@ -98,7 +99,7 @@ handle_interrupt(uint64_t pc)
         type = clint_interrupt();
 
     if (!type)
-        return pc;
+        return 0;
 
     /* Target */
     next_priv = intr_next_priv(type, priv());
@@ -109,7 +110,8 @@ handle_interrupt(uint64_t pc)
             uint32_t irq_bit = intr_bit_flag(type, S_MODE);
             if (sie & irq_bit) {
                 csr_update(SIP, irq_bit, CSR_OP_SET, &has_except);
-                pc = trap_enter(pc, next_priv, intr_cause(type, next_priv), 0);
+                ret_pc = trap_enter(pc, next_priv,
+                                    intr_cause(type, next_priv), 0);
             }
         }
     } else {
@@ -119,10 +121,11 @@ handle_interrupt(uint64_t pc)
             uint32_t irq_bit = intr_bit_flag(type, M_MODE);
             if (mie & irq_bit) {
                 csr_update(MIP, irq_bit, CSR_OP_SET, &has_except);
-                pc = trap_enter(pc, next_priv, intr_cause(type, next_priv), 0);
+                ret_pc = trap_enter(pc, next_priv,
+                                    intr_cause(type, next_priv), 0);
             }
         }
     }
 
-    return pc;
+    return ret_pc;
 }

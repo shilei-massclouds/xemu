@@ -126,6 +126,9 @@ trace(uint64_t pc)
         uint64_t value = _read_dword(item->no_mmu, reg[REG_SP], i);
         printf("  - 0x%-16lx\n", value);
     }
+    printf("\n");
+
+    printf("  ra: 0x%lx\n", reg[REG_RA]);
 
     printf("======================================\n");
 }

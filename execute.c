@@ -26,7 +26,7 @@ execute(address_space *as,
     uint64_t rd_val;
     double   frd_val;
     bool     is_frd = false;
-    uint64_t ret_pc = 0;
+    uint64_t ret_pc = next_pc;
 
     bool has_except = false;
 

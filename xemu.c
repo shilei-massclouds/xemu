@@ -115,10 +115,16 @@ main(void)
         uint32_t  csr_addr;
 
         uint64_t next_pc = 0;
-        uint64_t new_pc = 0;
         uint32_t inst = 0;
 
         trace(pc);
+
+        next_pc = handle_interrupt(pc);
+        if (next_pc) {
+            /* An interrupt occurs */
+            pc = next_pc;
+            continue;
+        }
 
         /* Fetch */
         next_pc = fetch(&root_as, pc, &inst);
@@ -134,19 +140,8 @@ main(void)
         trace_decode(pc, op, rd, rs1, rs2, imm, csr_addr);
 
         /* Execute */
-        new_pc = execute(&root_as, pc, next_pc,
-                         op, rd, rs1, rs2, imm, csr_addr);
-
-        trace_execute(pc, op, rd, rs1, rs2, imm, csr_addr);
-
-        if (new_pc) {
-            pc = new_pc;
-            continue;
-        }
-
-        pc = next_pc;
-
-        pc = handle_interrupt(pc);
+        pc = execute(&root_as, pc, next_pc,
+                     op, rd, rs1, rs2, imm, csr_addr);
     }
 
     return 0;
