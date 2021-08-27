@@ -12,3 +12,4 @@ setup_vm:
     nargs: 1
     stack: 0
     exit: true
+    watch: pfn_base

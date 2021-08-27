@@ -20,6 +20,9 @@
     void *__mptr = (void *)(ptr);                   \
     ((type *)(__mptr - offsetof(type, member))); })
 
+#define __container_of(ptr, sample, member)         \
+    (void *)container_of((ptr), typeof(*(sample)), member)
+
 /**
  * list_entry - get the struct for this entry
  * @ptr:    the &struct list_head pointer.
@@ -28,6 +31,28 @@
  */
 #define list_entry(ptr, type, member) \
     container_of(ptr, type, member)
+
+/**
+ * Loop through the list given by head and set pos to struct in the list.
+ *
+ * Example:
+ * struct foo *iterator;
+ * list_for_each_entry(iterator, &bar->list_of_foos, entry) {
+ *      [modify iterator]
+ * }
+ *
+ * This macro is not safe for node deletion. Use list_for_each_entry_safe
+ * instead.
+ *
+ * @param pos Iterator variable of the type of the list elements.
+ * @param head List head
+ * @param member Member name of the struct list_head in the list elements.
+ *
+ */
+#define list_for_each_entry(pos, head, member)              \
+    for (pos = __container_of((head)->next, pos, member);   \
+         &pos->member != (head);                            \
+         pos = __container_of(pos->member.next, pos, member))
 
 #define LIST_HEAD_INIT(name) { &(name), &(name) }
 
