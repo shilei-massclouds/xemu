@@ -28,8 +28,11 @@ early_init_dt_verify:
     nargs: 1
 
 parse_dtb:
-    enabled: true
     exit: true
     watch: boot_command_line,s
     watch: dt_root_addr_cells,w
     watch: dt_root_size_cells,w
+
+memblock_add:
+    enabled: true
+    nargs: 2

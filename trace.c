@@ -200,7 +200,7 @@ _conv_to_size(char c)
 void
 trace(uint64_t pc)
 {
-    int i;
+    uint64_t i;
     char point[32];
     uint64_t addr;
     watch_item *watch;
@@ -221,13 +221,13 @@ trace(uint64_t pc)
     printf("%s(%s): 0x%lx\n\n", item->name, point, addr);
 
     for (i = 0; i < item->nargs; i++)
-        printf("  a%d: 0x%-16lx\n", i, reg[REG_A0+i]);
+        printf("  a%lu: 0x%-16lx\n", i, reg[REG_A0+i]);
     if (item->nargs)
         printf("\n");
 
     printf("  sp: 0x%lx\n", reg[REG_SP]);
     for (i = 0; i < item->stack; i++) {
-        uint64_t value = _read_number(item->no_mmu, reg[REG_SP] + 8, 8);
+        uint64_t value = _read_number(item->no_mmu, reg[REG_SP] + (i << 3), 8);
         printf("  - 0x%-16lx\n", value);
     }
     printf("\n");
