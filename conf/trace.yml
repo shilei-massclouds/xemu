@@ -3,13 +3,33 @@
 #
 
 _start_kernel:
-    disabled: true
     no_mmu: true
     nargs: 2
 
 setup_vm:
     no_mmu: true
     nargs: 1
-    stack: 0
     exit: true
+    watch: va_pa_offset
     watch: pfn_base
+    watch: dtb_early_va
+    watch: dtb_early_pa
+
+relocate:
+    no_mmu: true
+    nargs: 1
+
+setup_trap_vector:
+    nargs: 1
+
+soc_early_init:
+
+early_init_dt_verify:
+    nargs: 1
+
+parse_dtb:
+    enabled: true
+    exit: true
+    watch: boot_command_line,s
+    watch: dt_root_addr_cells,w
+    watch: dt_root_size_cells,w

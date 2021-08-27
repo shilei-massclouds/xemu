@@ -23,6 +23,7 @@ typedef struct _exit_item {
 typedef struct _watch_item {
     list_head   entry;
     const char  *name;
+    char        type;
 } watch_item;
 
 static int trace_decode_en;
@@ -90,7 +91,7 @@ trace_execute(uint64_t   pc,
 
 typedef struct _trace_item {
     const char *name;
-    bool        disabled;
+    bool        enabled;
     uint64_t    addr;
     bool        no_mmu;
     int         nargs;
@@ -144,15 +145,56 @@ _match_pc(uint64_t pc, uint64_t *ret_pc)
     return NULL;
 }
 
-static uint64_t
-_read_dword(bool no_mmu, uint64_t base, int index)
+static void
+_show_string(bool no_mmu, uint64_t addr, const char *name)
 {
-    uint64_t addr = base + ((uint64_t)index << 3);
+    char c;
+    int i = 0;
+    char str[256] = {0};
 
+    do {
+        if (no_mmu)
+            c = (char)as_read_nommu(NULL, addr, 1, 0);
+        else
+            c = (char)as_read(NULL, addr, 1, 0, NULL);
+
+        if (i > 255)
+            panic("%s: string too long %d\n", __func__, i);
+
+        str[i++] = c;
+        addr++;
+    } while (c);
+
+    printf("  %s: %s\n", name, str);
+}
+
+static uint64_t
+_read_number(bool no_mmu, uint64_t addr, size_t size)
+{
     if (no_mmu)
-        return as_read_nommu(NULL, addr, 8, 0);
+        return as_read_nommu(NULL, addr, size, 0);
 
-    return as_read(NULL, addr, 8, 0, NULL);
+    return as_read(NULL, addr, size, 0, NULL);
+}
+
+static size_t
+_conv_to_size(char c)
+{
+    switch (c)
+    {
+    case 'd':
+        return 8;
+    case 'w':
+        return 4;
+    case 'h':
+        return 2;
+    case 'b':
+        return 1;
+    default:
+        panic("%s: bad indicator %c\n", __func__, c);
+    }
+
+    return 0;
 }
 
 void
@@ -164,7 +206,7 @@ trace(uint64_t pc)
     watch_item *watch;
     uint64_t exit_pc = 0;
     trace_item *item = _match_pc(pc, &exit_pc);
-    if (!item || item->disabled)
+    if (!item || !item->enabled)
         return;
 
     if (exit_pc) {
@@ -185,21 +227,31 @@ trace(uint64_t pc)
 
     printf("  sp: 0x%lx\n", reg[REG_SP]);
     for (i = 0; i < item->stack; i++) {
-        uint64_t value = _read_dword(item->no_mmu, reg[REG_SP], i);
+        uint64_t value = _read_number(item->no_mmu, reg[REG_SP] + 8, 8);
         printf("  - 0x%-16lx\n", value);
     }
     printf("\n");
 
+    printf("  tp: 0x%lx\n\n", reg[REG_TP]);
+
     list_for_each_entry(watch, &(item->watch_list), entry) {
         uint64_t base;
-        uint64_t value;
 
         if (match_in_system_map(watch->name, &base) == NULL)
             panic("%s: base name %s\n", __func__, watch->name);
 
-        base = va_to_pa(base);
-        value = _read_dword(item->no_mmu, base, 0);
-        printf("  %s: 0x%-16lx\n", watch->name, value);
+        if (item->no_mmu)
+            base = va_to_pa(base);
+
+        if (watch->type == 's') {
+            _show_string(item->no_mmu, base, watch->name);
+        } else {
+            uint64_t value = _read_number(item->no_mmu,
+                                          base,
+                                          _conv_to_size(watch->type));
+
+            printf("  %s: 0x%-16lx\n", watch->name, value);
+        }
     }
 
     if (!list_empty(&(item->watch_list)) && (exit_pc == 0))
@@ -234,8 +286,8 @@ trace_parse_cb(TOKEN token, const char *key, const char *value)
         break;
     case TOKEN_KV:
         item = &trace_table[trace_num - 1];
-        if (streq(key, "disabled")) {
-            item->disabled = streq(value, "true");
+        if (streq(key, "enabled")) {
+            item->enabled = streq(value, "true");
         } else if (streq(key, "no_mmu")) {
             item->no_mmu = streq(value, "true");
             item->addr = va_to_pa(item->addr);
@@ -247,7 +299,14 @@ trace_parse_cb(TOKEN token, const char *key, const char *value)
             item->exit = streq(value, "true");
         } else if (streq(key, "watch")) {
             watch_item *p = malloc(sizeof(watch_item));
-            p->name = strdup(value);
+            const char *end = strchr(value, ',');
+            if (end) {
+                p->name = strndup(value, (size_t)(end - value));
+                p->type = *(end + 1);
+            } else {
+                p->name = strdup(value);
+                p->type = 'd';
+            }
             list_add_tail(&(p->entry), &(item->watch_list));
         }
         break;
