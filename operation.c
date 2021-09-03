@@ -6,46 +6,46 @@
 #include "util.h"
 
 const char *op_names[] = {
-    "NOP",
+    "nop",
 
-    "LUI", "AUIPC",
+    "lui", "auipc",
 
-    "JAL", "JALR",
+    "jal", "jalr",
 
-    "BEQ", "BNE", "BLT", "BGE", "BLTU", "BGEU",
+    "beq", "bne", "blt", "bge", "bltu", "bgeu",
 
-    "LB", "LH", "LW", "LD", "LBU", "LHU", "LWU",
-    "SB", "SH", "SW", "SD",
+    "lb", "lh", "lw", "ld", "lbu", "lhu", "lwu",
+    "sb", "sh", "sw", "sd",
 
-    "ADDI", "SLLI", "SLTI", "SLTIU", "XORI", "SRLI", "SRAI", "ORI", "ANDI",
-    "ADDIW", "SLLIW", "SRLIW", "SRAIW",
+    "addi", "slli", "slti", "sltiu", "xori", "srli", "srai", "ori", "andi",
+    "addiw", "slliw", "srliw", "sraiw",
 
-    "ADD", "SUB", "SLL", "SLT", "SLTU", "XOR", "SRL", "SRA", "OR", "AND",
-    "ADDW", "SUBW", "SLLW", "SRLW", "SRAW",
+    "add", "sub", "sll", "slt", "sltu", "xor", "srl", "sra", "or", "and",
+    "addw", "subw", "sllw", "srlw", "sraw",
 
-    "FENCE", "FENCE_I",
+    "fence", "fence_i",
 
-    "ECALL", "EBREAK", "URET", "SRET", "MRET",
-    "WFI", "SFENCE_VMA",
+    "ecall", "ebreak", "uret", "sret", "mret",
+    "wfi", "sfence_vma",
 
-    "CSRRW", "CSRRS", "CSRRC",
-    "CSRRWI", "CSRRSI", "CSRRCI",
+    "csrrw", "csrrs", "csrrc",
+    "csrrwi", "csrrsi", "csrrci",
 
-    "MUL", "MULH", "MULHSU", "MULHU", "DIV", "DIVU", "REM", "REMU",
+    "mul", "mulh", "mulhsu", "mulhu", "div", "divu", "rem", "remu",
 
-    "MULW", "DIVW", "DIVUW", "REMW", "REMUW",
+    "mulw", "divw", "divuw", "remw", "remuw",
 
-    "AMO_ADD_D", "AMO_SWAP_D", "LR_D", "SC_D",
-    "AMO_XOR_D", "AMO_OR_D", "AMO_AND_D",
-    "AMO_MIN_D", "AMO_MAX_D", "AMO_MINU_D", "AMO_MAXU_D",
+    "amo_add_d", "amo_swap_d", "lr_d", "sc_d",
+    "amo_xor_d", "amo_or_d", "amo_and_d",
+    "amo_min_d", "amo_max_d", "amo_minu_d", "amo_maxu_d",
 
-    "AMO_ADD_W", "AMO_SWAP_W", "LR_W", "SC_W",
-    "AMO_XOR_W", "AMO_OR_W", "AMO_AND_W",
-    "AMO_MIN_W", "AMO_MAX_W", "AMO_MINU_W", "AMO_MAXU_W",
+    "amo_add_w", "amo_swap_w", "lr_w", "sc_w",
+    "amo_xor_w", "amo_or_w", "amo_and_w",
+    "amo_min_w", "amo_max_w", "amo_minu_w", "amo_maxu_w",
 
-    "FLW", "FSW", "FMV_W_X",
+    "flw", "fsw", "fmv_w_x",
 
-    "FLD", "FSD",
+    "fld", "fsd",
 };
 
 const char *

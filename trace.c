@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "util.h"
+#include "isa.h"
 #include "list.h"
 #include "trace.h"
 #include "regfile.h"
@@ -14,11 +15,6 @@
 #include "yaml.h"
 #include "system_map.h"
 #include "address_space.h"
-
-typedef struct _exit_item {
-    list_head   entry;
-    uint64_t    addr;
-} exit_item;
 
 typedef struct _watch_item {
     list_head   entry;
@@ -94,54 +90,38 @@ typedef struct _trace_item {
     bool        enabled;
     uint64_t    addr;
     bool        no_mmu;
-    int         nargs;
     int         stack;
-    bool        exit;
-    list_head   exit_list;
+    int         ninst;
     list_head   watch_list;
 } trace_item;
 
 static int trace_num;
 static trace_item trace_table[TRACE_ITEM_MAXNUM];
-
-static uint64_t
-_get_exit_addr(list_head *list)
-{
-    uint64_t addr;
-    exit_item *p;
-
-    if (list_empty(list))
-        return 0;
-
-    p = list_entry(list->prev, exit_item, entry);
-    return p->addr;
-}
-
-static void
-_pop_last_exit_addr(list_head *list)
-{
-    exit_item *p = list_entry(list->prev, exit_item, entry);
-    list_del(list->prev);
-    free(p);
-}
+static trace_item *item_in_process;
 
 static trace_item *
-_match_pc(uint64_t pc, uint64_t *ret_pc)
+_match_pc(uint64_t pc)
 {
     int i;
+
+    if (item_in_process) {
+        if (item_in_process->ninst > 0) {
+            item_in_process->ninst--;
+            return item_in_process;
+        }
+        item_in_process = NULL;
+    }
+
     for (i = 0; i < trace_num; i++) {
         trace_item *item = trace_table + i;
-        uint64_t exit_pc = _get_exit_addr(&(item->exit_list));
-        if (exit_pc && exit_pc == pc) {
-            *ret_pc = exit_pc;
-            _pop_last_exit_addr(&(item->exit_list));
-            return trace_table + i;
-        }
+        if (pc == item->addr) {
+            if (item->ninst > 0)
+                item_in_process = item;
 
-        if (trace_table[i].addr == pc) {
-            return trace_table + i;
+            return item;
         }
     }
+
     return NULL;
 }
 
@@ -197,33 +177,69 @@ _conv_to_size(char c)
     return 0;
 }
 
+#define HAS_RD  0x1
+#define HAS_RS1 0x2
+#define HAS_RS2 0x4
+
 void
-trace(uint64_t pc)
+trace(uint64_t pc, op_t op,
+      uint32_t rd, uint32_t rs1, uint32_t rs2,
+      uint64_t imm, uint32_t opcode)
 {
     uint64_t i;
-    char point[32];
-    uint64_t addr;
     watch_item *watch;
-    uint64_t exit_pc = 0;
-    trace_item *item = _match_pc(pc, &exit_pc);
+    uint32_t flag = 0;
+    trace_item *item = _match_pc(pc);
     if (!item || !item->enabled)
         return;
 
-    if (exit_pc) {
-        strcpy(point, "exit");
-        addr = exit_pc;
-    } else {
-        strcpy(point, "entry");
-        addr = item->addr;
-    }
-
     printf("======================================\n");
-    printf("%s(%s): 0x%lx\n\n", item->name, point, addr);
+    printf("0x%lx:", pc);
 
-    for (i = 0; i < item->nargs; i++)
-        printf("  a%lu: 0x%-16lx\n", i, reg[REG_A0+i]);
-    if (item->nargs)
-        printf("\n");
+    switch (opcode)
+    {
+    case OP_LOAD:
+    case OP_LOAD_FP:
+        printf("  %s %s, %ld(%s)\n",
+               op_name(op), reg_name(rd), imm, reg_name(rs1));
+        flag = HAS_RD | HAS_RS1;
+        break;
+    case OP_IMM:
+    case OP_IMM_W:
+        printf("  %s %s, %s, %ld\n",
+               op_name(op), reg_name(rd), reg_name(rs1), imm);
+        flag = HAS_RD | HAS_RS1;
+        break;
+    case OP_STORE:
+    case OP_STORE_FP:
+        printf("  %s %s, %ld(%s)\n",
+               op_name(op), reg_name(rs2), imm, reg_name(rs1));
+        flag = HAS_RS1 | HAS_RS2;
+        break;
+    case OP_BRANCH:
+        printf("  %s %s, %s, 0x%lx\n",
+               op_name(op), reg_name(rs1), reg_name(rs2), (imm + pc));
+        flag = HAS_RS1 | HAS_RS2;
+        break;
+    case OP_JAL:
+        printf("  %s %s, 0x%lx\n",
+               op_name(op), reg_name(rd), (imm + pc));
+        flag = HAS_RD;
+        break;
+    default:
+        panic("%s: bad opcode %x for %s\n",
+              __func__, opcode, op_name(op));
+    }
+    printf("\n");
+
+    if (rd && (flag & HAS_RD))
+        printf("  %s: 0x%-16lx\n", reg_name(rd), reg[rd]);
+    if (rs1 && (flag & HAS_RS1) && (rs1 != rd))
+        printf("  %s: 0x%-16lx\n", reg_name(rs1), reg[rs1]);
+    if (rs2 && (flag & HAS_RS2) && (rs2 != rd))
+        printf("  %s: 0x%-16lx\n", reg_name(rs2), reg[rs2]);
+
+    printf("\n");
 
     printf("  sp: 0x%lx\n", reg[REG_SP]);
     for (i = 0; i < item->stack; i++) {
@@ -254,18 +270,6 @@ trace(uint64_t pc)
         }
     }
 
-    if (!list_empty(&(item->watch_list)) && (exit_pc == 0))
-        printf("\n");
-
-    if (exit_pc == 0)
-        printf("  ra: 0x%lx\n", reg[REG_RA]);
-
-    if (item->exit) {
-        exit_item *p = malloc(sizeof(exit_item));
-        p->addr = reg[REG_RA];
-        list_add_tail(&(p->entry), &(item->exit_list));
-    }
-
     printf("======================================\n");
 }
 
@@ -281,7 +285,6 @@ trace_parse_cb(TOKEN token, const char *key, const char *value)
         item->name = match_in_system_map(key, &item->addr);
         if (item->name == NULL)
             panic("%s: bad obj %s\n", __func__, item->name);
-        INIT_LIST_HEAD(&(item->exit_list));
         INIT_LIST_HEAD(&(item->watch_list));
         break;
     case TOKEN_KV:
@@ -291,12 +294,10 @@ trace_parse_cb(TOKEN token, const char *key, const char *value)
         } else if (streq(key, "no_mmu")) {
             item->no_mmu = streq(value, "true");
             item->addr = va_to_pa(item->addr);
-        } else if (streq(key, "nargs")) {
-            item->nargs = atoi(value);
         } else if (streq(key, "stack")) {
             item->stack = atoi(value);
-        } else if (streq(key, "exit")) {
-            item->exit = streq(value, "true");
+        } else if (streq(key, "ninst")) {
+            item->ninst = atoi(value);
         } else if (streq(key, "watch")) {
             watch_item *p = malloc(sizeof(watch_item));
             const char *end = strchr(value, ',');

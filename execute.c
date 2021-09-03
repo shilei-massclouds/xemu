@@ -9,7 +9,7 @@
 #include "csr.h"
 #include "util.h"
 #include "trap.h"
-
+#include "trace.h"
 
 uint64_t
 execute(address_space *as,
@@ -20,7 +20,8 @@ execute(address_space *as,
         uint32_t rs1,
         uint32_t rs2,
         uint64_t imm,
-        uint32_t csr_addr)
+        uint32_t csr_addr,
+        uint32_t opcode)
 {
     uint64_t addr;
     uint64_t rd_val;
@@ -584,6 +585,8 @@ execute(address_space *as,
         else if (rd)
             reg[rd] = rd_val;
     }
+
+    trace(pc, op, rd, rs1, rs2, imm, opcode);
 
     return ret_pc;
 }

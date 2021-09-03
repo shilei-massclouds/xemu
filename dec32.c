@@ -41,9 +41,9 @@ dec32(uint64_t  pc,
       uint32_t  *rs1,
       uint32_t  *rs2,
       uint64_t  *imm,
-      uint32_t  *csr_addr)
+      uint32_t  *csr_addr,
+      uint32_t  *opcode)
 {
-    uint32_t opcode = BITS(inst, 6, 0);
     uint32_t funct3 = BITS(inst, 14, 12);
     uint32_t funct5 = BITS(inst, 31, 27);
     uint32_t funct7 = BITS(inst, 31, 25);
@@ -54,8 +54,9 @@ dec32(uint64_t  pc,
     *rs2 = BITS(inst, 24, 20);
     *imm = 0;
     *csr_addr = 0;
+    *opcode = BITS(inst, 6, 0);
 
-    switch (opcode)
+    switch (*opcode)
     {
     case OP_LUI:
         *op = LUI;

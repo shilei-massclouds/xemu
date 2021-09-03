@@ -15,15 +15,15 @@
 #define NANOSECONDS_PER_SECOND 1000000000LL
 #define XEMU_CLINT_TIMEBASE_FREQ 10000000
 
+extern uint64_t _pc;
 static int64_t cpu_clock_offset;
-
 
 void
 panic(const char *msg, ...)
 {
     va_list ap;
     fprintf(stderr, "\n#############################\n");
-    fprintf(stderr, "PANIC:\n");
+    fprintf(stderr, "PANIC: 0x%lx\n", _pc);
     va_start(ap, msg);
     vfprintf(stderr, msg, ap);
     va_end(ap);

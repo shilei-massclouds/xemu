@@ -69,9 +69,10 @@ dec16(uint64_t  pc,
       uint32_t  *rs1,
       uint32_t  *rs2,
       uint64_t  *imm,
-      uint32_t  *csr_addr)
+      uint32_t  *csr_addr,
+      uint32_t  *opcode)
 {
-    uint32_t opcode = (uint32_t)BITS(inst, 1, 0);
+    uint32_t quadrant = (uint32_t)BITS(inst, 1, 0);
     uint32_t funct3 = (uint32_t)BITS(inst, 15, 13);
 
     *op = NOP;
@@ -81,7 +82,7 @@ dec16(uint64_t  pc,
     *imm = 0;
     *csr_addr = 0;
 
-    switch (opcode)
+    switch (quadrant)
     {
     case 0:
         switch (funct3)
@@ -89,6 +90,7 @@ dec16(uint64_t  pc,
         case 0:
             /* c.addi4spn */
             *op = ADDI;
+            *opcode = OP_IMM;
             *rd = 8 + (uint32_t)(uint32_t)BITS(inst, 4, 2);
             *rs1 = 2;   /* sp */
             *imm = N_IMM(inst);
@@ -97,6 +99,7 @@ dec16(uint64_t  pc,
         case 1:
             /* c.fld */
             *op = FLD;
+            *opcode = OP_LOAD;
             *rd = 8 + (uint32_t)(uint32_t)BITS(inst, 4, 2);
             *rs1 = 8 + (uint32_t)(uint32_t)BITS(inst, 9, 7);
             *imm = U_IMM_D(inst);
@@ -105,6 +108,7 @@ dec16(uint64_t  pc,
         case 2:
             /* c.lw */
             *op = LW;
+            *opcode = OP_LOAD;
             *rd = 8 + (uint32_t)(uint32_t)BITS(inst, 4, 2);
             *rs1 = 8 + (uint32_t)BITS(inst, 9, 7);
             *imm = U_IMM(inst);
@@ -113,6 +117,7 @@ dec16(uint64_t  pc,
         case 3:
             /* c.ld */
             *op = LD;
+            *opcode = OP_LOAD;
             *rd = 8 + (uint32_t)BITS(inst, 4, 2);
             *rs1 = 8 + (uint32_t)BITS(inst, 9, 7);
             *imm = U_IMM_D(inst);
@@ -121,6 +126,7 @@ dec16(uint64_t  pc,
         case 5:
             /* c.fsd */
             *op = FSD;
+            *opcode = OP_STORE;
             *rs1 = 8 + (uint32_t)BITS(inst, 9, 7);
             *rs2 = 8 + (uint32_t)BITS(inst, 4, 2);
             *imm = U_IMM_D(inst);
@@ -129,6 +135,7 @@ dec16(uint64_t  pc,
         case 6:
             /* c.sw */
             *op = SW;
+            *opcode = OP_STORE;
             *rs1 = 8 + (uint32_t)BITS(inst, 9, 7);
             *rs2 = 8 + (uint32_t)BITS(inst, 4, 2);
             *imm = U_IMM(inst);
@@ -137,6 +144,7 @@ dec16(uint64_t  pc,
         case 7:
             /* c.sd */
             *op = SD;
+            *opcode = OP_STORE;
             *rs1 = 8 + (uint32_t)BITS(inst, 9, 7);
             *rs2 = 8 + (uint32_t)BITS(inst, 4, 2);
             *imm = U_IMM_D(inst);
@@ -156,12 +164,14 @@ dec16(uint64_t  pc,
             *rd = (uint32_t)BITS(inst, 11, 7);
             *rs1 = *rd;
             *op = *rd ? ADDI : NOP;
+            *opcode = *rd ? OP_IMM : OP_NOP;
             *imm = *rd ? I_IMM(inst) : 0;
             break;
 
         case 1:
             /* c.addiw */
             *op = ADDIW;
+            *opcode = OP_IMM;
             *rd = (uint32_t)BITS(inst, 11, 7);
             *rs1 = *rd;
             *imm = I_IMM(inst);
@@ -170,6 +180,7 @@ dec16(uint64_t  pc,
         case 2:
             /* c.li */
             *op = ADDI;
+            *opcode = OP_IMM;
             *rd = (uint32_t)BITS(inst, 11, 7);
             *imm = I_IMM(inst);
             break;
@@ -179,10 +190,12 @@ dec16(uint64_t  pc,
             *rd = (uint32_t)BITS(inst, 11, 7);
             if (*rd == 2) {
                 *op = ADDI;
+                *opcode = OP_IMM;
                 *rs1 = 2;
                 *imm = D_IMM(inst);
             } else {
                 *op = LUI;
+                *opcode = OP_LUI;
                 *imm = I_IMM(inst) << 12;
             }
             break;
@@ -194,6 +207,7 @@ dec16(uint64_t  pc,
             case 0:
                 /* c.srli */
                 *op = SRLI;
+                *opcode = OP_IMM;
                 *rd = 8 + (uint32_t)BITS(inst, 9, 7);
                 *rs1 = *rd;
                 *imm = UI_IMM(inst);
@@ -202,6 +216,7 @@ dec16(uint64_t  pc,
             case 1:
                 /* c.srai */
                 *op = SRAI;
+                *opcode = OP_IMM;
                 *rd = 8 + (uint32_t)BITS(inst, 9, 7);
                 *rs1 = *rd;
                 *imm = UI_IMM(inst);
@@ -210,12 +225,14 @@ dec16(uint64_t  pc,
             case 2:
                 /* c.andi */
                 *op = ANDI;
+                *opcode = OP_IMM;
                 *rd = 8 + (uint32_t)BITS(inst, 9, 7);
                 *rs1 = *rd;
                 *imm = I_IMM(inst);
                 break;
 
             case 3:
+                *opcode = OP_REG;
                 switch ((uint32_t)BITS(inst, 6, 5))
                 {
                 case 0:
@@ -263,12 +280,14 @@ dec16(uint64_t  pc,
         case 5:
             /* c.j */
             *op = JAL;
+            *opcode = OP_JAL;
             *imm = J_IMM(inst);
             break;
 
         case 6:
             /* c.beqz */
             *op = BEQ;
+            *opcode = OP_BRANCH;
             *rs1 = 8 + (uint32_t)BITS(inst, 9, 7);
             *imm = B_IMM(inst);
             break;
@@ -276,6 +295,7 @@ dec16(uint64_t  pc,
         case 7:
             /* c.bnez */
             *op = BNE;
+            *opcode = OP_BRANCH;
             *rs1 = 8 + (uint32_t)BITS(inst, 9, 7);
             *imm = B_IMM(inst);
             break;
@@ -292,6 +312,7 @@ dec16(uint64_t  pc,
         case 0:
             /* c.slli */
             *op = SLLI;
+            *opcode = OP_IMM;
             *rd = (uint32_t)BITS(inst, 11, 7);
             *rs1 = *rd;
             *imm = UI_IMM(inst);
@@ -300,6 +321,7 @@ dec16(uint64_t  pc,
         case 1:
             /* c.fldsp */
             *op = FLD;
+            *opcode = OP_LOAD;
             *rd = (uint32_t)BITS(inst, 11, 7);
             *rs1 = 2;   /* sp */
             *imm = LDSP_IMM(inst);
@@ -308,6 +330,7 @@ dec16(uint64_t  pc,
         case 2:
             /* c.lwsp */
             *op = LW;
+            *opcode = OP_LOAD;
             *rd = (uint32_t)BITS(inst, 11, 7);
             *rs1 = 2;   /* sp */
             *imm = LWSP_IMM(inst);
@@ -316,6 +339,7 @@ dec16(uint64_t  pc,
         case 3:
             /* c.ldsp */
             *op = LD;
+            *opcode = OP_LOAD;
             *rd = (uint32_t)BITS(inst, 11, 7);
             *rs1 = 2;   /* sp */
             *imm = LDSP_IMM(inst);
@@ -330,24 +354,29 @@ dec16(uint64_t  pc,
                         /* c.add */
                         *rd = *rs1;
                         *op = ADD;
+                        *opcode = OP_REG;
                     } else {
                         /* c.jalr */
                         *rd = 1;    /* ra */
                         *op = JALR;
+                        *opcode = OP_JALR;
                     }
                 } else {
                     /* c.ebreak */
                     *op = EBREAK;
+                    *opcode = OP_SYSTEM;
                 }
             } else {
                 *rs2 = (uint32_t)BITS(inst, 6, 2);
                 if (*rs2) {
                     /* c.mv */
                     *op = ADD;
+                    *opcode = OP_REG;
                     *rd = (uint32_t)BITS(inst, 11, 7);
                 } else {
                     /* c.jr */
                     *op = JALR;
+                    *opcode = OP_JALR;
                     *rs1 = (uint32_t)BITS(inst, 11, 7);
                 }
             }
@@ -356,6 +385,7 @@ dec16(uint64_t  pc,
         case 6:
             /* c.swsp */
             *op = SW;
+            *opcode = OP_STORE;
             *rs1 = 2;   /* sp */
             *rs2 = (uint32_t)BITS(inst, 6, 2);
             *imm = SWSP_IMM(inst);
@@ -364,6 +394,7 @@ dec16(uint64_t  pc,
         case 7:
             /* c.sdsp */
             *op = SD;
+            *opcode = OP_STORE;
             *rs1 = 2;   /* sp */
             *rs2 = (uint32_t)BITS(inst, 6, 2);
             *imm = SDSP_IMM(inst);

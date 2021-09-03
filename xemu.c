@@ -14,40 +14,41 @@
 #include "csr.h"
 #include "mmu.h"
 #include "trap.h"
-#include "trace.h"
 #include "system_map.h"
 #include "virtio.h"
+#include "trace.h"
 
 #define VIRTIO_MMIO_AS_START_0  0x0000000010001000UL
 #define VIRTIO_MMIO_AS_END_0    0x0000000010001FFFUL
 
 extern address_space root_as;
 
+uint64_t _pc = 0x1000;
 const char *vda_filename = "./image/test.raw";
 
 uint64_t
-fetch(address_space *as, uint64_t pc, uint32_t *inst)
+fetch(address_space *as, uint32_t *inst)
 {
     uint32_t lo;
     uint32_t hi;
 
     bool has_except = false;
 
-    if ((pc + 2) & (PAGE_SIZE - 1UL)) {
-        *inst = (uint32_t)as_read(as, pc, 4, 0, &has_except);
+    if ((_pc + 2) & (PAGE_SIZE - 1UL)) {
+        *inst = (uint32_t)as_read(as, _pc, 4, 0, &has_except);
         if (has_except)
-            return raise_except(pc, CAUSE_INST_PAGE_FAULT, pc);
+            return raise_except(_pc, CAUSE_INST_PAGE_FAULT, _pc);
 
         return 0;
     }
 
-    lo = (uint32_t)as_read(as, pc, 2, 0, &has_except);
+    lo = (uint32_t)as_read(as, _pc, 2, 0, &has_except);
     if (has_except)
-        return raise_except(pc, CAUSE_INST_PAGE_FAULT, pc);
+        return raise_except(_pc, CAUSE_INST_PAGE_FAULT, _pc);
 
-    hi = (uint32_t)as_read(as, pc + 2, 2, 0, &has_except);
+    hi = (uint32_t)as_read(as, _pc + 2, 2, 0, &has_except);
     if (has_except)
-        return raise_except(pc, CAUSE_INST_PAGE_FAULT, pc);
+        return raise_except(_pc, CAUSE_INST_PAGE_FAULT, _pc);
 
     *inst = ((hi << 16) | lo);
     return 0;
@@ -59,7 +60,6 @@ main(void)
     uint64_t i;
     device_t *rom;
     device_t *flash;
-    uint64_t pc = 0x1000;
 
     printf("[XEMU startup ...]\n");
 
@@ -113,35 +113,34 @@ main(void)
         uint32_t  rs2;
         uint64_t  imm;
         uint32_t  csr_addr;
+        uint32_t  opcode;
 
         uint64_t next_pc = 0;
         uint32_t inst = 0;
 
-        trace(pc);
-
-        next_pc = handle_interrupt(pc);
+        next_pc = handle_interrupt(_pc);
         if (next_pc) {
             /* An interrupt occurs */
-            pc = next_pc;
+            _pc = next_pc;
             continue;
         }
 
         /* Fetch */
-        next_pc = fetch(&root_as, pc, &inst);
+        next_pc = fetch(&root_as, &inst);
         if (next_pc) {
             /* An except occurs during fetch */
-            pc = next_pc;
+            _pc = next_pc;
             continue;
         }
 
         /* Decode */
-        next_pc = decode(pc, inst, &op, &rd, &rs1, &rs2, &imm, &csr_addr);
-
-        trace_decode(pc, op, rd, rs1, rs2, imm, csr_addr);
+        next_pc = decode(_pc, inst, &op, &rd, &rs1, &rs2, &imm,
+                         &csr_addr, &opcode);
 
         /* Execute */
-        pc = execute(&root_as, pc, next_pc,
-                     op, rd, rs1, rs2, imm, csr_addr);
+        _pc = execute(&root_as, _pc, next_pc,
+                      op, rd, rs1, rs2, imm,
+                      csr_addr, opcode);
     }
 
     return 0;
