@@ -184,7 +184,8 @@ _conv_to_size(char c)
 void
 trace(uint64_t pc, op_t op,
       uint32_t rd, uint32_t rs1, uint32_t rs2,
-      uint64_t imm, uint32_t opcode)
+      uint64_t imm, uint32_t csr_addr,
+      uint32_t opcode)
 {
     uint64_t i;
     watch_item *watch;
@@ -210,21 +211,41 @@ trace(uint64_t pc, op_t op,
                op_name(op), reg_name(rd), reg_name(rs1), imm);
         flag = HAS_RD | HAS_RS1;
         break;
+    case OP_AUIPC:
+        printf("  %s %s, 0x%lx\n",
+               op_name(op), reg_name(rd), imm);
+        flag = HAS_RD;
+        break;
     case OP_STORE:
     case OP_STORE_FP:
         printf("  %s %s, %ld(%s)\n",
                op_name(op), reg_name(rs2), imm, reg_name(rs1));
         flag = HAS_RS1 | HAS_RS2;
         break;
+    case OP_REG:
+        printf("  %s %s, %s, %s\n",
+               op_name(op), reg_name(rd), reg_name(rs1), reg_name(rs2));
+        flag = HAS_RD | HAS_RS1 | HAS_RS2;
+        break;
     case OP_BRANCH:
         printf("  %s %s, %s, 0x%lx\n",
                op_name(op), reg_name(rs1), reg_name(rs2), (imm + pc));
         flag = HAS_RS1 | HAS_RS2;
         break;
+    case OP_JALR:
+        printf("  %s %s, %ld(%s)\n",
+               op_name(op), reg_name(rd), imm, reg_name(rs1));
+        flag = HAS_RD | HAS_RS1;
+        break;
     case OP_JAL:
         printf("  %s %s, 0x%lx\n",
                op_name(op), reg_name(rd), (imm + pc));
         flag = HAS_RD;
+        break;
+    case OP_SYSTEM:
+        printf("  %s %s, %s, %s\n",
+               op_name(op), reg_name(rd), csr_name(csr_addr), reg_name(rs1));
+        flag = HAS_RD | HAS_RS1;
         break;
     default:
         panic("%s: bad opcode %x for %s\n",

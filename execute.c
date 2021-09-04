@@ -586,7 +586,7 @@ execute(address_space *as,
             reg[rd] = rd_val;
     }
 
-    trace(pc, op, rd, rs1, rs2, imm, opcode);
+    trace(pc, op, rd, rs1, rs2, imm, csr_addr, opcode);
 
     return ret_pc;
 }

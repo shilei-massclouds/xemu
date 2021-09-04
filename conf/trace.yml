@@ -2,6 +2,7 @@
 # trace.yml
 #
 
-sbi_console_puts:
-    ninst: 10
+relocate:
     enabled: true
+    no_mmu: true
+    ninst: 30
