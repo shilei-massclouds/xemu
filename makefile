@@ -2,7 +2,7 @@
 # Makefile
 #
 
-.PHONY: all clean
+.PHONY: all clean bios
 
 CC = gcc
 CFLAGS = -Werror -Wconversion
@@ -15,7 +15,10 @@ TARGET = xemu
 OBJS = $(subst .c,.o, $(wildcard *.c))
 HEADERS = $(wildcard *.h)
 
-all:$(TARGET)
+all:$(TARGET) bios
+
+bios:
+	make -C ./bios
 
 %.o:%.c
 	$(CC) $(CFLAGS) $(INC) -o $@ -c $<
@@ -25,3 +28,4 @@ $(TARGET):$(OBJS) $(HEADERS)
 
 clean:
 	rm -rf $(TARGET) $(OBJS)
+	make -C ./bios clean

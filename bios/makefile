@@ -7,17 +7,17 @@ CFLAGS = -no-pie -Wall -nostdlib -D__ASSEMBLY__ -fno-omit-frame-pointer \
 		 -fno-optimize-sibling-calls -mno-save-restore -mstrict-align
 LDFLAGS = -Wl,--build-id=none
 
-OBJS = $(subst .S,.bin, $(wildcard *.S))
-
 %.elf:%.S
 	$(CC) -Ttext=0x1000 $(CFLAGS) ./$^ -o ./$@ $(LDFLAGS)
 
 %.bin:%.elf
 	$(COPY) -O binary ./$^ ./$@
-
-all:$(OBJS)
-	dtc -I dts -O dtb ./virt.dts > ./virt.dtb
 	cp ./bios.bin ../image/
+
+all: bios.bin virt.dtb
+
+virt.dtb: virt.dts
+	dtc -I dts -O dtb ./virt.dts > ./virt.dtb
 	cp ./virt.dtb ../image/
 
 clean:

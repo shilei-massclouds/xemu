@@ -82,7 +82,7 @@ flash_init(address_space *parent_as)
     return (device_t *) flash;
 }
 
-void
+size_t
 flash_add_file(device_t *dev, const char *filename, size_t base)
 {
     uint8_t *ptr;
@@ -122,8 +122,5 @@ flash_add_file(device_t *dev, const char *filename, size_t base)
 
     printf("%s: add file %s\n", __func__, filename);
 
-    /* Recode file-size into (base - 8) */
-    if (base) {
-        *((uint64_t *)(ptr + base - 8)) = (uint64_t)info.st_size;
-    }
+    return size;
 }

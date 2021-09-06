@@ -29,7 +29,7 @@ clint_init(address_space *parent_as);
 device_t *
 flash_init(address_space *parent_as);
 
-void
+size_t
 flash_add_file(device_t *dev, const char *filename, size_t base);
 
 device_t *

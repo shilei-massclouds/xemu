@@ -3,6 +3,6 @@
 #
 
 relocate:
-    enabled: true
+    enabled: false
     no_mmu: true
-    ninst: 30
+    ninst: 10

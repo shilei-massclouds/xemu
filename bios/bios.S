@@ -10,19 +10,21 @@ _start:
     csrr    a0, mhartid
     li      a1, DTB_LOAD_ADDR
 
-    li      t5, PAYLOAD_LOAD_ADDR
     li      t6, PAYLOAD_LINK_ADDR
+    li      t5, PAYLOAD_LOAD_ADDR
+    ld      t4, 40(t5)
     call    _relocate
 
-    li      t5, SBI_LOAD_ADDR
     li      t6, SBI_LINK_ADDR
+    li      t5, SBI_LOAD_ADDR
+    ld      t4, -8(t5)          /* size of sbi          */
     call    _relocate
 
     jr      t6
 
 _relocate:
+    mv      t1, t4              /* size of target       */
     mv      t2, t5              /* start of load addr   */
-    ld      t1, -8(t2)          /* size of sbi          */
     addi    t1, t1, 7
     andi    t1, t1, ~7
     add     t3, t2, t1          /* end of load addr     */

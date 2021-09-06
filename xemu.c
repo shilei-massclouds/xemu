@@ -87,8 +87,10 @@ main(void)
     rom_add_file(rom, "image/virt.dtb", 0x100);
     rom_add_file(rom, "image/fw_jump.bin", 0x2000);
 
+    size_t base = 0x100;
     flash = flash_init(&root_as);
-    flash_add_file(flash, "image/payload.bin", 0x100);
+    base = flash_add_file(flash, "image/startup.bin", base);
+    base = flash_add_file(flash, "image/kernel.ko", base);
 
     ram_init(&root_as);
 

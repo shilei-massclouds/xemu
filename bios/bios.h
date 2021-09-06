@@ -10,7 +10,7 @@
 
 /*
  * Based on ROM
- * Head(0x0 ~ 0x100): Relocate dtb, sbi and payload and jump to fw_jump.
+ * Head(0x0 ~ 0x100): Relocate dtb, sbi and kernel and jump to fw_jump.
  * DTB(0x100 ~ 0x2000): FDT for this platform.
  * SBI(0x2000 ~ 0x20000): SBI fw_jump.
  */
