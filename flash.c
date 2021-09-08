@@ -42,6 +42,10 @@ flash_read(void *dev, uint64_t addr, size_t size, params_t params)
 {
     uint8_t *ptr = _flash_ptr(dev, addr, size);
 
+    if (!IN_SAME_PAGE(addr, size))
+        panic("%s: out of page boundary 0x%lx (0x%lx)\n",
+              __func__, addr, size);
+
     switch (size)
     {
     case 8:
@@ -56,6 +60,42 @@ flash_read(void *dev, uint64_t addr, size_t size, params_t params)
 
     panic("%s: bad size %d\n", __func__, size);
     return 0;
+}
+
+static uint64_t
+flash_write(void *dev, uint64_t addr, uint64_t data, size_t size,
+            params_t params)
+{
+    uint64_t ret = 0;
+    uint8_t *ptr = _flash_ptr(dev, addr, size);
+
+    if (!IN_SAME_PAGE(addr, size))
+        panic("%s: out of page boundary 0x%lx (0x%lx)\n",
+              __func__, addr, size);
+
+    switch (size)
+    {
+    case 8:
+        ret = *((uint64_t *)ptr);
+        *((uint64_t *)ptr) = (uint64_t)data;
+        break;
+    case 4:
+        ret = *((uint32_t *)ptr);
+        *((uint32_t *)ptr) = (uint32_t)data;
+        break;
+    case 2:
+        ret = *((uint16_t *)ptr);
+        *((uint16_t *)ptr) = (uint16_t)data;
+        break;
+    case 1:
+        ret = *((uint8_t *)ptr);
+        *((uint8_t *)ptr) = (uint8_t)data;
+        break;
+    default:
+        panic("%s: bad size %d\n", __func__, size);
+    }
+
+    return ret;
 }
 
 device_t *
@@ -74,6 +114,7 @@ flash_init(address_space *parent_as)
                        FLASH_ADDRESS_SPACE_END);
 
     flash->dev.as.ops.read_op = flash_read;
+    flash->dev.as.ops.write_op = flash_write;
 
     flash->dev.as.device = flash;
 

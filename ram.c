@@ -11,9 +11,6 @@
 #define PD_NUM  1024
 #define PT_NUM  1024
 
-#define _PFN(addr) ((addr) >> PAGE_BITS)
-#define IN_SAME_PAGE(addr, size) (_PFN(addr) == _PFN(addr + size - 1UL))
-
 #define RAM_ADDRESS_SPACE_START 0x0000000080000000
 #define RAM_ADDRESS_SPACE_END   0x00000000FFFFFFFF
 

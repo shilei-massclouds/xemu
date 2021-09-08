@@ -9,6 +9,9 @@
 
 #include "types.h"
 
+#define _PFN(addr) ((addr) >> PAGE_BITS)
+#define IN_SAME_PAGE(addr, size) (_PFN(addr) == _PFN(addr + size - 1UL))
+
 /* Sv39 for riscv64 */
 #define ROOT_ADDRESS_SPACE_START 0x0000000000000000
 #define ROOT_ADDRESS_SPACE_END   0x0000007FFFFFFFFF
