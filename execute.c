@@ -20,8 +20,7 @@ execute(address_space *as,
         uint32_t rs1,
         uint32_t rs2,
         uint64_t imm,
-        uint32_t csr_addr,
-        uint32_t opcode)
+        uint32_t csr_addr)
 {
     uint64_t addr;
     uint64_t rd_val;
@@ -585,8 +584,6 @@ execute(address_space *as,
         else if (rd)
             reg[rd] = rd_val;
     }
-
-    trace(pc, op, rd, rs1, rs2, imm, csr_addr, opcode);
 
     return ret_pc;
 }

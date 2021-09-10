@@ -185,7 +185,7 @@ void
 trace(uint64_t pc, op_t op,
       uint32_t rd, uint32_t rs1, uint32_t rs2,
       uint64_t imm, uint32_t csr_addr,
-      uint32_t opcode)
+      uint32_t opcode, uint32_t inst)
 {
     uint64_t i;
     watch_item *watch;
@@ -201,49 +201,49 @@ trace(uint64_t pc, op_t op,
     {
     case OP_LOAD:
     case OP_LOAD_FP:
-        printf("  %s %s, %ld(%s)\n",
+        printf("  %s %s, %ld(%s)",
                op_name(op), reg_name(rd), imm, reg_name(rs1));
         flag = HAS_RD | HAS_RS1;
         break;
     case OP_IMM:
     case OP_IMM_W:
-        printf("  %s %s, %s, %ld\n",
+        printf("  %s %s, %s, %ld",
                op_name(op), reg_name(rd), reg_name(rs1), imm);
         flag = HAS_RD | HAS_RS1;
         break;
     case OP_AUIPC:
-        printf("  %s %s, 0x%lx\n",
+        printf("  %s %s, 0x%lx",
                op_name(op), reg_name(rd), imm);
         flag = HAS_RD;
         break;
     case OP_STORE:
     case OP_STORE_FP:
-        printf("  %s %s, %ld(%s)\n",
+        printf("  %s %s, %ld(%s)",
                op_name(op), reg_name(rs2), imm, reg_name(rs1));
         flag = HAS_RS1 | HAS_RS2;
         break;
     case OP_REG:
-        printf("  %s %s, %s, %s\n",
+        printf("  %s %s, %s, %s",
                op_name(op), reg_name(rd), reg_name(rs1), reg_name(rs2));
         flag = HAS_RD | HAS_RS1 | HAS_RS2;
         break;
     case OP_BRANCH:
-        printf("  %s %s, %s, 0x%lx\n",
+        printf("  %s %s, %s, 0x%lx",
                op_name(op), reg_name(rs1), reg_name(rs2), (imm + pc));
         flag = HAS_RS1 | HAS_RS2;
         break;
     case OP_JALR:
-        printf("  %s %s, %ld(%s)\n",
+        printf("  %s %s, %ld(%s)",
                op_name(op), reg_name(rd), imm, reg_name(rs1));
         flag = HAS_RD | HAS_RS1;
         break;
     case OP_JAL:
-        printf("  %s %s, 0x%lx\n",
+        printf("  %s %s, 0x%lx",
                op_name(op), reg_name(rd), (imm + pc));
         flag = HAS_RD;
         break;
     case OP_SYSTEM:
-        printf("  %s %s, %s, %s\n",
+        printf("  %s %s, %s, %s",
                op_name(op), reg_name(rd), csr_name(csr_addr), reg_name(rs1));
         flag = HAS_RD | HAS_RS1;
         break;
@@ -251,7 +251,12 @@ trace(uint64_t pc, op_t op,
         panic("%s: bad opcode %x for %s\n",
               __func__, opcode, op_name(op));
     }
-    printf("\n");
+
+    if ((inst & 0x3) == 0x3) {
+        printf("\t[0x%08x]\n", inst);
+    } else {
+        printf("\t[0x%04x]\n", inst & 0xFFFF);
+    }
 
     if (rd && (flag & HAS_RD))
         printf("  %s: 0x%-16lx\n", reg_name(rd), reg[rd]);

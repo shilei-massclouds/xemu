@@ -31,7 +31,7 @@ void
 trace(uint64_t pc, op_t op,
       uint32_t rd, uint32_t rs1, uint32_t rs2,
       uint64_t imm, uint32_t csr_addr,
-      uint32_t opcode);
+      uint32_t opcode, uint32_t inst);
 
 void
 setup_trace_table(void);

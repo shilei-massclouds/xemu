@@ -140,9 +140,12 @@ main(void)
                          &csr_addr, &opcode);
 
         /* Execute */
-        _pc = execute(&root_as, _pc, next_pc,
-                      op, rd, rs1, rs2, imm,
-                      csr_addr, opcode);
+        next_pc = execute(&root_as, _pc, next_pc,
+                          op, rd, rs1, rs2, imm, csr_addr);
+
+        trace(_pc, op, rd, rs1, rs2, imm, csr_addr, opcode, inst);
+
+        _pc = next_pc;
     }
 
     return 0;
