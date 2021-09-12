@@ -10,11 +10,12 @@
 #include "util.h"
 #include "address_space.h"
 #include "device.h"
+#include "elf.h"
 
-#define FLASH_ADDRESS_SPACE_START 0x0000000020000000
-#define FLASH_ADDRESS_SPACE_END   0x0000000023FFFFFF
+#define FLASH_ADDRESS_SPACE_START 0x0000000020000000UL
+#define FLASH_ADDRESS_SPACE_END   0x0000000023FFFFFFUL
 #define FLASH_ADDRESS_SPACE_SIZE  \
-    ((size_t)FLASH_ADDRESS_SPACE_END - (size_t)FLASH_ADDRESS_SPACE_START + 1)
+    (FLASH_ADDRESS_SPACE_END - FLASH_ADDRESS_SPACE_START + 1)
 
 typedef struct _flash_t
 {
@@ -29,10 +30,13 @@ static uint8_t *
 _flash_ptr(void *dev, uint64_t addr, size_t size)
 {
     flash_t *flash = (flash_t *) dev;
-    if (addr + size > flash->mem_size) {
-        panic("%s: 0x%llx out of limit 0x%lx\n",
-              __func__, addr, flash->mem_size);
+    if (addr + size > FLASH_ADDRESS_SPACE_SIZE) {
+        panic("%s: 0x%llx out of limit 0x%llx\n",
+              __func__, addr, FLASH_ADDRESS_SPACE_SIZE);
     }
+
+    if (addr + size > flash->mem_size)
+        return NULL;
 
     return (flash->mem_ptr + addr);
 }
@@ -41,6 +45,8 @@ static uint64_t
 flash_read(void *dev, uint64_t addr, size_t size, params_t params)
 {
     uint8_t *ptr = _flash_ptr(dev, addr, size);
+    if (ptr == NULL)
+        return 0;
 
     if (!IN_SAME_PAGE(addr, size))
         panic("%s: out of page boundary 0x%lx (0x%lx)\n",
@@ -69,7 +75,7 @@ flash_write(void *dev, uint64_t addr, uint64_t data, size_t size,
     uint64_t ret = 0;
     uint8_t *ptr = _flash_ptr(dev, addr, size);
 
-    if (!IN_SAME_PAGE(addr, size))
+    if (!ptr || !IN_SAME_PAGE(addr, size))
         panic("%s: out of page boundary 0x%lx (0x%lx)\n",
               __func__, addr, size);
 
@@ -161,7 +167,11 @@ flash_add_file(device_t *dev, const char *filename, size_t base)
 
     fclose(fp);
 
-    printf("%s: add file %s\n", __func__, filename);
+    if (elf64_hdr_check(ptr + base))
+        elf64_hdr_set_length(ptr + base, (uint64_t)info.st_size);
+
+    printf("%s: add file %s(%lx:%lx)\n",
+           __func__, filename, base, flash->mem_size);
 
     return size;
 }
