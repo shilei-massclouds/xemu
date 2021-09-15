@@ -90,6 +90,7 @@ main(void)
     size_t base = 0x100;
     flash = flash_init(&root_as);
     base = flash_add_file(flash, "image/startup.bin", base);
+    base = flash_add_file(flash, "image/memblock.ko", base);
     base = flash_add_file(flash, "image/of.ko", base);
     base = flash_add_file(flash, "image/test.ko", base);
 
