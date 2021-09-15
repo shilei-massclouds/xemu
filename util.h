@@ -11,8 +11,9 @@
 
 #include "csr.h"
 
-#define PAGE_SIZE 4096
-#define PAGE_BITS 12
+#define PAGE_SHIFT  (12)
+#define PAGE_SIZE   (1UL << PAGE_SHIFT)
+#define PAGE_MASK   (~(PAGE_SIZE - 1))
 
 /* n must be power of 2 */
 #define ROUND_UP(x, n) (((x) + (n) - 1u) & ~((n) - 1u))

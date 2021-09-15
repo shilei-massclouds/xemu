@@ -45,14 +45,8 @@ _ram_ptr(void *dev, uint64_t addr)
 }
 
 static uint64_t
-ram_read(void *dev, uint64_t addr, size_t size, params_t params)
+_read(uint8_t *ptr, size_t size)
 {
-    uint8_t *ptr = _ram_ptr(dev, addr);
-
-    if (!IN_SAME_PAGE(addr, size))
-        panic("%s: out of page boundary 0x%lx (0x%lx)\n",
-              __func__, addr, size);
-
     switch (size)
     {
     case 8:
@@ -67,6 +61,28 @@ ram_read(void *dev, uint64_t addr, size_t size, params_t params)
 
     panic("%s: bad size %d\n", __func__, size);
     return 0;
+}
+
+static uint64_t
+ram_read(void *dev, uint64_t addr, size_t size, params_t params)
+{
+    uint8_t *ptr;
+    size_t offset;
+    uint64_t hi = 0;
+
+    if (!IN_SAME_PAGE(addr, size)) {
+        printf("WARN! %s: (%lx, %lx) crosses boundary!\n",
+               __func__, addr, size);
+
+        ptr = _ram_ptr(dev, (addr + size) & PAGE_MASK);
+        offset = (addr + size) & (~PAGE_MASK);
+        hi = _read(ptr, offset) << (offset << 3);
+
+        size -= offset;
+    }
+
+    ptr = _ram_ptr(dev, addr);
+    return _read(ptr, size) | hi;
 }
 
 static uint32_t
@@ -173,38 +189,60 @@ _amo64(uint64_t orig, uint64_t data, params_t params)
     return ret;
 }
 
-static uint64_t
-ram_write(void *dev, uint64_t addr, uint64_t data, size_t size,
-          params_t params)
+static void
+_write(uint8_t *ptr, uint64_t data, size_t size)
 {
-    uint64_t ret = 0;
-    uint8_t *ptr = _ram_ptr(dev, addr);
-
-    if (!IN_SAME_PAGE(addr, size))
-        panic("%s: out of page boundary 0x%lx (0x%lx)\n",
-              __func__, addr, size);
-
     switch (size)
     {
     case 8:
-        ret = (params == PARAMS_LR_SC) ? 0: *((uint64_t *)ptr);
-        *((uint64_t *)ptr) = _amo64(ret, data, params);
+        *((uint64_t *)ptr) = data;
         break;
     case 4:
-        ret = (params == PARAMS_LR_SC) ? 0: *((uint32_t *)ptr);
-        *((uint32_t *)ptr) = _amo32((uint32_t)ret, (uint32_t)data, params);
+        *((uint32_t *)ptr) = (uint32_t)data;
         break;
     case 2:
-        ret = *((uint16_t *)ptr);
         *((uint16_t *)ptr) = (uint16_t)data;
         break;
     case 1:
-        ret = *((uint8_t *)ptr);
         *((uint8_t *)ptr) = (uint8_t)data;
         break;
     default:
         panic("%s: bad size %d\n", __func__, size);
     }
+}
+
+static uint64_t
+ram_write(void *dev, uint64_t addr, uint64_t data, size_t size,
+          params_t params)
+{
+    uint8_t *ptr;
+    uint64_t ret = 0;
+
+    if (params != PARAMS_LR_SC)
+        ret = ram_read(dev, addr, size, params);
+
+    if (size == 8)
+        data = _amo64(ret, data, params);
+    else if (size == 4)
+        data = _amo32((uint32_t)ret, (uint32_t)data, params);
+
+    if (!IN_SAME_PAGE(addr, size)) {
+        size_t offset;
+        uint64_t hi;
+
+        printf("WARN! %s: (%lx, %lx) crosses boundary!\n",
+               __func__, addr, size);
+
+        offset = (addr + size) & (~PAGE_MASK);
+        hi = data >> (offset << 3);
+        ptr = _ram_ptr(dev, (addr + size) & PAGE_MASK);
+        _write(ptr, hi, offset);
+
+        size -= offset;
+    }
+
+    ptr = _ram_ptr(dev, addr);
+    _write(ptr, data, size);
 
     return ret;
 }

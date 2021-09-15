@@ -9,7 +9,7 @@
 
 #include "types.h"
 
-#define _PFN(addr) ((addr) >> PAGE_BITS)
+#define _PFN(addr) ((addr) >> PAGE_SHIFT)
 #define IN_SAME_PAGE(addr, size) (_PFN(addr) == _PFN(addr + size - 1UL))
 
 /* Sv39 for riscv64 */
