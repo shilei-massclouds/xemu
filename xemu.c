@@ -17,6 +17,7 @@
 #include "system_map.h"
 #include "virtio.h"
 #include "trace.h"
+#include "module.h"
 
 #define VIRTIO_MMIO_AS_START_0  0x0000000010001000UL
 #define VIRTIO_MMIO_AS_END_0    0x0000000010001FFFUL
@@ -93,6 +94,9 @@ main(void)
     base = flash_add_file(flash, "image/memblock.ko", base);
     base = flash_add_file(flash, "image/of.ko", base);
     base = flash_add_file(flash, "image/test.ko", base);
+
+    /* Todo */
+    sort_modules();
 
     ram_init(&root_as);
 
