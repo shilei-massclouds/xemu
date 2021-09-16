@@ -33,6 +33,16 @@
     container_of(ptr, type, member)
 
 /**
+ * list_for_each_safe - iterate over a list safe against removal of list entry
+ * @pos:    the &struct list_head to use as a loop cursor.
+ * @n:      another &struct list_head to use as temporary storage
+ * @head:   the head for your list.
+ */
+#define list_for_each_safe(pos, n, head) \
+    for (pos = (head)->next, n = pos->next; pos != (head); \
+        pos = n, n = pos->next)
+
+/**
  * Loop through the list given by head and set pos to struct in the list.
  *
  * Example:
@@ -117,10 +127,84 @@ list_del(list_head *entry)
     entry->prev = NULL;
 }
 
+/**
+ * list_move - delete from one list and add as another's head
+ * @list: the entry to move
+ * @head: the head that will precede our entry
+ */
+static inline void
+list_move(list_head *list, list_head *head)
+{
+    __list_del_entry(list);
+    list_add(list, head);
+}
+
+/**
+ * list_move_tail - delete from one list and add as another's tail
+ * @list: the entry to move
+ * @head: the head that will follow our entry
+ */
+static inline void
+list_move_tail(list_head *list, list_head *head)
+{
+    __list_del_entry(list);
+    list_add_tail(list, head);
+}
+
 static inline int
 list_empty(const list_head *head)
 {
     return (head->next == head);
+}
+
+static inline void
+__list_splice(const list_head *list,
+              list_head *prev,
+              list_head *next)
+{
+    list_head *first = list->next;
+    list_head *last = list->prev;
+
+    first->prev = prev;
+    prev->next = first;
+
+    last->next = next;
+    next->prev = last;
+}
+
+/**
+ * list_splice_init - join two lists and reinitialise the emptied list.
+ * @list: the new list to add.
+ * @head: the place to add it in the first list.
+ *
+ * The list at @list is reinitialised
+ */
+static inline void
+list_splice_init(list_head *list,
+                 list_head *head)
+{
+    if (!list_empty(list)) {
+        __list_splice(list, head, head->next);
+        INIT_LIST_HEAD(list);
+    }
+}
+
+/**
+ * list_splice_tail_init - join two lists and reinitialise the emptied list
+ * @list: the new list to add.
+ * @head: the place to add it in the first list.
+ *
+ * Each of the lists is a queue.
+ * The list at @list is reinitialised
+ */
+static inline void
+list_splice_tail_init(list_head *list,
+                      list_head *head)
+{
+    if (!list_empty(list)) {
+        __list_splice(list, head->prev, head);
+        INIT_LIST_HEAD(list);
+    }
 }
 
 #endif /* _TRACE_H_ */

@@ -45,6 +45,7 @@ discover_modules(void)
             module *mod = malloc(sizeof(module));
             mod->name = strdup(namelist[n]->d_name);
             INIT_LIST_HEAD(&(mod->undef_syms));
+            INIT_LIST_HEAD(&(mod->symbols));
             list_add_tail(&(mod->list), &pending);
         } else if (!strcmp(namelist[n]->d_name, "startup.bin")) {
             has_startup = true;
@@ -95,14 +96,14 @@ detect_syms_range(void)
 }
 
 static void
-export_symbols(const char *start, const char *end)
+export_symbols(const char *start, const char *end, list_head *sym_list)
 {
     while (start < end) {
         symbol *sym = malloc(sizeof(symbol));
         sym->name = strdup(start);
-        list_add_tail(&(sym->list), &symbols);
+        list_add_tail(&(sym->list), sym_list);
 
-        printf("%s: export(%s)\n", __func__, start);
+        pr_debug("%s: export(%s)\n", __func__, start);
         start = strchr(start, '\0');
         start++;
     }
@@ -116,7 +117,7 @@ init_symtable(void)
     char *cur;
 
     detect_syms_range();
-    printf("range(%x, %x)\n", ksym_ptr, ksym_num);
+    pr_debug("range(%x, %x)\n", ksym_ptr, ksym_num);
 
     fp = fopen(KMODULE_DIR "startup.bin", "rb");
     if (fp == NULL)
@@ -127,7 +128,7 @@ init_symtable(void)
     buf = malloc(ksym_num);
     fread(buf, 1, ksym_num, fp);
 
-    export_symbols(buf, buf + ksym_num);
+    export_symbols(buf, buf + ksym_num, &symbols);
 
     free(buf);
     fclose(fp);
@@ -139,7 +140,7 @@ get_strtab(Elf64_Shdr *shdr, FILE *fp)
     char *str;
 
     str = (char *) malloc(shdr->sh_size);
-    printf("%s: offset(%lx)\n", __func__, shdr->sh_offset);
+    pr_debug("%s: offset(%lx)\n", __func__, shdr->sh_offset);
 
     fseek(fp, (long)shdr->sh_offset, SEEK_SET);
     if (fread(str, 1, shdr->sh_size, fp) != shdr->sh_size)
@@ -168,14 +169,48 @@ discover_undef_syms(module *mod,
             symbol *undef = malloc(sizeof(symbol));
             undef->name = strdup(strtab + sym[i].st_name);
             list_add_tail(&(undef->list), &(mod->undef_syms));
-            printf("%s: name(%s)\n", __func__, undef->name);
+            pr_debug("%s: name(%s)\n", __func__, undef->name);
         }
     }
 
     free(sym);
 }
 
-static void
+static bool
+match_undef(const char *name)
+{
+    symbol *sym;
+
+    list_for_each_entry(sym, &(symbols), list) {
+        if (strcmp(sym->name, name) == 0)
+            return true;
+    }
+
+    return false;
+}
+
+static bool
+check_dependency(module *mod)
+{
+    list_head *p, *n;
+
+    list_for_each_safe(p, n, &(mod->undef_syms)) {
+        symbol *undef = list_entry(p, symbol, list);
+        if (match_undef(undef->name)) {
+            list_del(&(undef->list));
+            free(undef);
+        }
+    }
+
+    if (list_empty(&(mod->undef_syms))) {
+        list_splice_tail_init(&(mod->symbols), &(symbols));
+        return true;
+    }
+
+    return false;
+}
+
+static bool
 analysis_module(module *mod)
 {
     int i;
@@ -185,7 +220,7 @@ analysis_module(module *mod)
     Elf64_Ehdr hdr = {0};
     char filename[256] = {0};
 
-    printf("%s: %s\n", __func__, mod->name);
+    pr_debug("%s: %s\n", __func__, mod->name);
     sprintf(filename, "%s%s", KMODULE_DIR, mod->name);
     fp = fopen(filename, "rb");
     if (fp == NULL)
@@ -210,8 +245,8 @@ analysis_module(module *mod)
             char *strtab;
             strtab = get_strtab(&sechdrs[shdr->sh_link], fp);
 
-            printf("[%d]: SHT_SYMTAB (%lx, %lx)\n",
-                   i, shdr->sh_offset, shdr->sh_size);
+            pr_debug("[%d]: SHT_SYMTAB (%lx, %lx)\n",
+                     i, shdr->sh_offset, shdr->sh_size);
 
             discover_undef_syms(mod, shdr, strtab, fp);
             free(strtab);
@@ -219,7 +254,8 @@ analysis_module(module *mod)
             const char *name = secstrings + shdr->sh_name;
             if (strcmp(name, "_ksymtab_strings") == 0) {
                 char *ksym_str = get_strtab(shdr, fp);
-                export_symbols(ksym_str, ksym_str + shdr->sh_size);
+                export_symbols(ksym_str, ksym_str + shdr->sh_size,
+                               &mod->symbols);
             }
         }
     }
@@ -227,19 +263,47 @@ analysis_module(module *mod)
     free(secstrings);
     free(sechdrs);
     fclose(fp);
+
+    return check_dependency(mod);
 }
 
 void
 sort_modules(void)
 {
+    list_head *p, *n;
     module *mod;
 
     discover_modules();
 
-    /* ksymtab for startup.bin */
+    /* Init ksymtab based on startup.bin. */
     init_symtable();
 
-    list_for_each_entry(mod, &(pending), list) {
-        analysis_module(mod);
+    list_for_each_safe(p, n, &pending) {
+        mod = list_entry(p, module, list);
+        if (analysis_module(mod))
+            list_move_tail(&(mod->list), &modules);
+    }
+
+    while (!list_empty(&pending)) {
+        list_for_each_safe(p, n, &pending) {
+            mod = list_entry(p, module, list);
+            if (check_dependency(mod))
+                list_move_tail(&(mod->list), &modules);
+        }
+    }
+
+    list_for_each_safe(p, n, &modules) {
+        mod = list_entry(p, module, list);
+        printf("[%s]\n", mod->name);
+        list_del(&(mod->list));
+        free(mod->name);
+        free(mod);
+    }
+
+    list_for_each_safe(p, n, &symbols) {
+        symbol *sym = list_entry(p, symbol, list);
+        list_del(&(sym->list));
+        free(sym->name);
+        free(sym);
     }
 }

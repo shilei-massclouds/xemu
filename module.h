@@ -10,14 +10,15 @@
 
 typedef struct _module {
     list_head   list;
-    const char  *name;
+    char        *name;
 
     list_head   undef_syms;
+    list_head   symbols;
 } module;
 
 typedef struct _symbol {
     list_head   list;
-    const char  *name;
+    char        *name;
 } symbol;
 
 void
