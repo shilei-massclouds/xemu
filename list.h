@@ -35,6 +35,17 @@
     container_of(ptr, type, member)
 
 /**
+ * list_first_entry - get the first element from a list
+ * @ptr:    the list head to take the element from.
+ * @type:   the type of the struct this is embedded in.
+ * @member: the name of the list_head within the struct.
+ *
+ * Note, that list is expected to be not empty.
+ */
+#define list_first_entry(ptr, type, member) \
+    list_entry((ptr)->next, type, member)
+
+/**
  * list_for_each_safe - iterate over a list safe against removal of list entry
  * @pos:    the &struct list_head to use as a loop cursor.
  * @n:      another &struct list_head to use as temporary storage

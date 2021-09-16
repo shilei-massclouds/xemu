@@ -271,6 +271,7 @@ sort_modules(void)
 {
     list_head *p, *n;
     module *mod;
+    symbol *sym;
 
     discover_modules();
 
@@ -284,15 +285,28 @@ sort_modules(void)
     }
 
     while (!list_empty(&pending)) {
+        bool advance = false;
         list_for_each_safe(p, n, &pending) {
             mod = list_entry(p, module, list);
-            if (check_dependency(mod))
+            if (check_dependency(mod)) {
                 list_move_tail(&(mod->list), &modules);
+                advance = true;
+            }
+        }
+
+        if (!advance) {
+            list_for_each_entry(mod, &pending, list) {
+                list_for_each_entry(sym, &(mod->undef_syms), list) {
+                    printf("undef '%s' in module '%s'.\n", sym->name, mod->name);
+                }
+            }
+
+            panic("find undef symbols!\n");
         }
     }
 
     list_for_each_safe(p, n, &symbols) {
-        symbol *sym = list_entry(p, symbol, list);
+        sym = list_entry(p, symbol, list);
         list_del(&(sym->list));
         free(sym->name);
         free(sym);
