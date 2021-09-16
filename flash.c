@@ -11,6 +11,7 @@
 #include "address_space.h"
 #include "device.h"
 #include "elf.h"
+#include "module.h"
 
 #define FLASH_ADDRESS_SPACE_START 0x0000000020000000UL
 #define FLASH_ADDRESS_SPACE_END   0x0000000023FFFFFFUL
@@ -24,7 +25,6 @@ typedef struct _flash_t
     uint8_t *mem_ptr;
     size_t mem_size;
 } flash_t;
-
 
 static uint8_t *
 _flash_ptr(void *dev, uint64_t addr, size_t size)
@@ -174,4 +174,24 @@ flash_add_file(device_t *dev, const char *filename, size_t base)
            __func__, filename, base, flash->mem_size);
 
     return size;
+}
+
+void
+flash_load_modules(device_t *dev)
+{
+    module *mod;
+    list_head *mod_list;
+    size_t base = 0x100;
+
+    mod_list = sort_modules();
+
+    base = flash_add_file(dev, "image/startup.bin", base);
+
+    list_for_each_entry(mod, mod_list, list) {
+        char filename[256] = {0};
+        sprintf(filename, "%s%s", KMODULE_DIR, mod->name);
+        base = flash_add_file(dev, filename, base);
+    }
+
+    clear_modules();
 }

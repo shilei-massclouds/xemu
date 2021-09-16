@@ -10,15 +10,14 @@
 #include "util.h"
 
 #define PAGE_OFFSET 0xffffffe000000000UL
-#define KMODULE_DIR "image/"
 
-LIST_HEAD(pending);
-LIST_HEAD(modules);
+static LIST_HEAD(pending);
+static LIST_HEAD(modules);
 
-LIST_HEAD(symbols);
+static LIST_HEAD(symbols);
 
-uint32_t ksym_ptr;
-uint32_t ksym_num;
+static uint32_t ksym_ptr;
+static uint32_t ksym_num;
 
 static bool
 check_module(const char *name)
@@ -267,7 +266,7 @@ analysis_module(module *mod)
     return check_dependency(mod);
 }
 
-void
+list_head *
 sort_modules(void)
 {
     list_head *p, *n;
@@ -292,18 +291,26 @@ sort_modules(void)
         }
     }
 
-    list_for_each_safe(p, n, &modules) {
-        mod = list_entry(p, module, list);
-        printf("[%s]\n", mod->name);
-        list_del(&(mod->list));
-        free(mod->name);
-        free(mod);
-    }
-
     list_for_each_safe(p, n, &symbols) {
         symbol *sym = list_entry(p, symbol, list);
         list_del(&(sym->list));
         free(sym->name);
         free(sym);
+    }
+
+    return &modules;
+}
+
+void
+clear_modules(void)
+{
+    list_head *p, *n;
+    module *mod;
+
+    list_for_each_safe(p, n, &modules) {
+        mod = list_entry(p, module, list);
+        list_del(&(mod->list));
+        free(mod->name);
+        free(mod);
     }
 }

@@ -8,6 +8,8 @@
 #include <stdint.h>
 #include "list.h"
 
+#define KMODULE_DIR "image/"
+
 typedef struct _module {
     list_head   list;
     char        *name;
@@ -21,8 +23,11 @@ typedef struct _symbol {
     char        *name;
 } symbol;
 
-void
+list_head *
 sort_modules(void);
+
+void
+clear_modules(void);
 
 /*
  * ELF64

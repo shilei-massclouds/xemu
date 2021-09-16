@@ -17,7 +17,6 @@
 #include "system_map.h"
 #include "virtio.h"
 #include "trace.h"
-#include "module.h"
 
 #define VIRTIO_MMIO_AS_START_0  0x0000000010001000UL
 #define VIRTIO_MMIO_AS_END_0    0x0000000010001FFFUL
@@ -88,15 +87,8 @@ main(void)
     rom_add_file(rom, "image/virt.dtb", 0x100);
     rom_add_file(rom, "image/fw_jump.bin", 0x2000);
 
-    size_t base = 0x100;
     flash = flash_init(&root_as);
-    base = flash_add_file(flash, "image/startup.bin", base);
-    base = flash_add_file(flash, "image/memblock.ko", base);
-    base = flash_add_file(flash, "image/of.ko", base);
-    base = flash_add_file(flash, "image/test.ko", base);
-
-    /* Todo */
-    sort_modules();
+    flash_load_modules(flash);
 
     ram_init(&root_as);
 

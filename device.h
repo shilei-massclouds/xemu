@@ -32,6 +32,9 @@ flash_init(address_space *parent_as);
 size_t
 flash_add_file(device_t *dev, const char *filename, size_t base);
 
+void
+flash_load_modules(device_t *dev);
+
 device_t *
 rom_init(address_space *parent_as);
 
