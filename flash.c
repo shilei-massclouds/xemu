@@ -170,8 +170,8 @@ flash_add_file(device_t *dev, const char *filename, size_t base)
     if (elf64_hdr_check(ptr + base))
         elf64_hdr_set_length(ptr + base, (uint64_t)info.st_size);
 
-    printf("%s: add file %s(%lx:%lx)\n",
-           __func__, filename, base, flash->mem_size);
+    printf("%s: add file %s [0x%lx - 0x%lx)\n",
+           __func__, filename, base, size);
 
     return size;
 }
