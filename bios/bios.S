@@ -12,7 +12,7 @@ _start:
 
     li      t6, PAYLOAD_LINK_ADDR
     li      t5, PAYLOAD_LOAD_ADDR
-    ld      t4, 40(t5)
+    ld      t4, 16(t5)          /* size of kernel       */
     call    _relocate
 
     li      t6, SBI_LINK_ADDR
