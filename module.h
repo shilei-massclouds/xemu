@@ -10,9 +10,15 @@
 
 #define KMODULE_DIR "image/"
 
+typedef enum {
+    M_STATUS_NONE = 0,
+    M_STATUS_DOING,
+    M_STATUS_DONE,
+} mod_status;
+
 typedef struct _module {
     char        *name;
-    int         ref;
+    mod_status  status;
 
     list_head   list;
 

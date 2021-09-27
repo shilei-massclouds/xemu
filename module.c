@@ -285,21 +285,18 @@ analysis_module(module *mod)
     fclose(fp);
 }
 
-static bool
+static void
 traverse_dependency(module *mod, sort_callback cb, void *opaque)
 {
     list_head *p, *n;
 
     pr_debug("### %s: '%s' (%d)\n",
-             __func__, mod->name, mod->ref);
+             __func__, mod->name, mod->status);
 
-    if (mod->ref == -1)
-        return false;
+    if (mod->status)
+        return;
 
-    if (mod->ref == 1)
-        return true;
-
-    mod->ref = 1;
+    mod->status = M_STATUS_DOING;
 
     list_for_each_safe(p, n, &mod->dependencies) {
         depend *d = list_entry(p, depend, list);
@@ -307,22 +304,21 @@ traverse_dependency(module *mod, sort_callback cb, void *opaque)
         pr_debug("%s: '%s' -> '%s'\n",
                  __func__, mod->name, d->mod->name);
 
-        if (traverse_dependency(d->mod, cb, opaque)) {
+        traverse_dependency(d->mod, cb, opaque);
+        if (d->mod->status != M_STATUS_DONE) {
             printf("cyclic chain: '%s'\n", d->mod->name);
-            return true;
+            return;
         }
 
         list_del(&(d->list));
         free(d);
     }
 
-    if (list_empty(&(mod->dependencies))) {
-        pr_debug("!!! %s: '%s'\n", __func__, mod->name);
-        mod->ref = -1;
-        cb(mod->name, opaque);
-    }
+    if (!list_empty(&(mod->dependencies)))
+        panic("'%s' broken dependencies!\n", mod->name);
 
-    return false;
+    mod->status = M_STATUS_DONE;
+    cb(mod->name, opaque);
 }
 
 void
@@ -344,7 +340,8 @@ sort_modules(sort_callback cb, void *opaque)
         check_dependency(mod);
 
     list_for_each_entry(mod, &modules, list) {
-        if (traverse_dependency(mod, cb, opaque))
+        traverse_dependency(mod, cb, opaque);
+        if (mod->status != M_STATUS_DONE)
             panic("cyclic chain: '%s'.\n", mod->name);
     }
 
