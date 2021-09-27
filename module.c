@@ -2,6 +2,8 @@
  * Module
  */
 
+//#define X_DEBUG
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
@@ -11,7 +13,6 @@
 
 #define PAGE_OFFSET 0xffffffe000000000UL
 
-static LIST_HEAD(pending);
 static LIST_HEAD(modules);
 
 static LIST_HEAD(symbols);
@@ -41,11 +42,11 @@ discover_modules(void)
 
     while (n--) {
         if (check_module(namelist[n]->d_name)) {
-            module *mod = malloc(sizeof(module));
+            module *mod = calloc(1, sizeof(module));
             mod->name = strdup(namelist[n]->d_name);
             INIT_LIST_HEAD(&(mod->undef_syms));
-            INIT_LIST_HEAD(&(mod->symbols));
-            list_add_tail(&(mod->list), &pending);
+            INIT_LIST_HEAD(&(mod->dependencies));
+            list_add_tail(&(mod->list), &modules);
         } else if (!strcmp(namelist[n]->d_name, "startup.bin")) {
             has_startup = true;
         } else if (!strcmp(namelist[n]->d_name, "System.map")) {
@@ -95,11 +96,13 @@ detect_syms_range(void)
 }
 
 static void
-export_symbols(const char *start, const char *end, list_head *sym_list)
+export_symbols(const char *start, const char *end,
+               list_head *sym_list, module *mod)
 {
     while (start < end) {
-        symbol *sym = malloc(sizeof(symbol));
+        symbol *sym = calloc(1, sizeof(symbol));
         sym->name = strdup(start);
+        sym->mod = mod;
         list_add_tail(&(sym->list), sym_list);
 
         pr_debug("%s: export(%s)\n", __func__, start);
@@ -124,10 +127,10 @@ init_symtable(void)
 
     fseek(fp, (long)ksym_ptr, SEEK_SET);
 
-    buf = malloc(ksym_num);
+    buf = calloc(ksym_num, 1);
     fread(buf, 1, ksym_num, fp);
 
-    export_symbols(buf, buf + ksym_num, &symbols);
+    export_symbols(buf, buf + ksym_num, &symbols, NULL);
 
     free(buf);
     fclose(fp);
@@ -138,7 +141,7 @@ get_strtab(Elf64_Shdr *shdr, FILE *fp)
 {
     char *str;
 
-    str = (char *) malloc(shdr->sh_size);
+    str = (char *) calloc(shdr->sh_size, 1);
     pr_debug("%s: offset(%lx)\n", __func__, shdr->sh_offset);
 
     fseek(fp, (long)shdr->sh_offset, SEEK_SET);
@@ -157,7 +160,7 @@ discover_undef_syms(module *mod,
     int i;
     Elf64_Sym *sym;
 
-    sym = (Elf64_Sym *)malloc(shdr->sh_size);
+    sym = (Elf64_Sym *)calloc(shdr->sh_size, 1);
 
     fseek(fp, (long)shdr->sh_offset, SEEK_SET);
     if (fread(sym, 1, shdr->sh_size, fp) != shdr->sh_size)
@@ -165,7 +168,7 @@ discover_undef_syms(module *mod,
 
     for (i = 1; i < shdr->sh_size / sizeof(Elf64_Sym); i++) {
         if (sym[i].st_shndx == SHN_UNDEF) {
-            symbol *undef = malloc(sizeof(symbol));
+            symbol *undef = calloc(1, sizeof(symbol));
             undef->name = strdup(strtab + sym[i].st_name);
             list_add_tail(&(undef->list), &(mod->undef_syms));
             pr_debug("%s: name(%s)\n", __func__, undef->name);
@@ -175,41 +178,59 @@ discover_undef_syms(module *mod,
     free(sym);
 }
 
-static bool
+static symbol *
 match_undef(const char *name)
 {
     symbol *sym;
 
     list_for_each_entry(sym, &(symbols), list) {
         if (strcmp(sym->name, name) == 0)
+            return sym;
+    }
+
+    return NULL;
+}
+
+static bool
+find_dependency(module *cur, module *target)
+{
+    depend *dep;
+
+    list_for_each_entry(dep, &(cur->dependencies), list) {
+        if (dep->mod == target)
             return true;
     }
 
     return false;
 }
 
-static bool
+static void
 check_dependency(module *mod)
 {
     list_head *p, *n;
 
     list_for_each_safe(p, n, &(mod->undef_syms)) {
         symbol *undef = list_entry(p, symbol, list);
-        if (match_undef(undef->name)) {
-            list_del(&(undef->list));
-            free(undef);
+        symbol *sym = match_undef(undef->name);
+        if (sym == NULL)
+            panic("mod '%s' has undef symbols '%s'!\n",
+                  mod->name, undef->name);
+
+        if (sym->mod && !find_dependency(mod, sym->mod)) {
+            depend *d = calloc(1, sizeof(depend));
+            d->mod = sym->mod;
+            list_add_tail(&(d->list), &(mod->dependencies));
         }
+
+        list_del(&(undef->list));
+        free(undef);
     }
 
-    if (list_empty(&(mod->undef_syms))) {
-        list_splice_tail_init(&(mod->symbols), &(symbols));
-        return true;
-    }
-
-    return false;
+    if (!list_empty(&(mod->undef_syms)))
+        panic("mod '%s' has undef symbols!\n", mod->name);
 }
 
-static bool
+static void
 analysis_module(module *mod)
 {
     int i;
@@ -254,7 +275,7 @@ analysis_module(module *mod)
             if (strcmp(name, "_ksymtab_strings") == 0) {
                 char *ksym_str = get_strtab(shdr, fp);
                 export_symbols(ksym_str, ksym_str + shdr->sh_size,
-                               &mod->symbols);
+                               &symbols, mod);
             }
         }
     }
@@ -262,12 +283,50 @@ analysis_module(module *mod)
     free(secstrings);
     free(sechdrs);
     fclose(fp);
-
-    return check_dependency(mod);
 }
 
-list_head *
-sort_modules(void)
+static bool
+traverse_dependency(module *mod, sort_callback cb, void *opaque)
+{
+    list_head *p, *n;
+
+    pr_debug("### %s: '%s' (%d)\n",
+             __func__, mod->name, mod->ref);
+
+    if (mod->ref == -1)
+        return false;
+
+    if (mod->ref == 1)
+        return true;
+
+    mod->ref = 1;
+
+    list_for_each_safe(p, n, &mod->dependencies) {
+        depend *d = list_entry(p, depend, list);
+
+        pr_debug("%s: '%s' -> '%s'\n",
+                 __func__, mod->name, d->mod->name);
+
+        if (traverse_dependency(d->mod, cb, opaque)) {
+            printf("cyclic chain: '%s'\n", d->mod->name);
+            return true;
+        }
+
+        list_del(&(d->list));
+        free(d);
+    }
+
+    if (list_empty(&(mod->dependencies))) {
+        pr_debug("!!! %s: '%s'\n", __func__, mod->name);
+        mod->ref = -1;
+        cb(mod->name, opaque);
+    }
+
+    return false;
+}
+
+void
+sort_modules(sort_callback cb, void *opaque)
 {
     list_head *p, *n;
     module *mod;
@@ -278,31 +337,15 @@ sort_modules(void)
     /* Init ksymtab based on startup.bin. */
     init_symtable();
 
-    list_for_each_safe(p, n, &pending) {
-        mod = list_entry(p, module, list);
-        if (analysis_module(mod))
-            list_move_tail(&(mod->list), &modules);
-    }
+    list_for_each_entry(mod, &modules, list)
+        analysis_module(mod);
 
-    while (!list_empty(&pending)) {
-        bool advance = false;
-        list_for_each_safe(p, n, &pending) {
-            mod = list_entry(p, module, list);
-            if (check_dependency(mod)) {
-                list_move_tail(&(mod->list), &modules);
-                advance = true;
-            }
-        }
+    list_for_each_entry(mod, &modules, list)
+        check_dependency(mod);
 
-        if (!advance) {
-            list_for_each_entry(mod, &pending, list) {
-                list_for_each_entry(sym, &(mod->undef_syms), list) {
-                    printf("undef '%s' in module '%s'.\n", sym->name, mod->name);
-                }
-            }
-
-            panic("find undef symbols!\n");
-        }
+    list_for_each_entry(mod, &modules, list) {
+        if (traverse_dependency(mod, cb, opaque))
+            panic("cyclic chain: '%s'.\n", mod->name);
     }
 
     list_for_each_safe(p, n, &symbols) {
@@ -311,8 +354,6 @@ sort_modules(void)
         free(sym->name);
         free(sym);
     }
-
-    return &modules;
 }
 
 void

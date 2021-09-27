@@ -11,20 +11,31 @@
 #define KMODULE_DIR "image/"
 
 typedef struct _module {
-    list_head   list;
     char        *name;
+    int         ref;
+
+    list_head   list;
 
     list_head   undef_syms;
-    list_head   symbols;
+    list_head   dependencies;
 } module;
 
-typedef struct _symbol {
+typedef struct _depend {
+    module      *mod;
     list_head   list;
+} depend;
+
+typedef struct _symbol {
     char        *name;
+    module      *mod;
+
+    list_head   list;
 } symbol;
 
-list_head *
-sort_modules(void);
+typedef void (*sort_callback)(const char *name, void *opaque);
+
+void
+sort_modules(sort_callback cb, void *opaque);
 
 void
 clear_modules(void);

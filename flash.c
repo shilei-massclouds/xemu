@@ -13,6 +13,8 @@
 #include "elf.h"
 #include "module.h"
 
+#define FLASH_HEAD_SIZE 0x100
+
 #define FLASH_ADDRESS_SPACE_START 0x0000000020000000UL
 #define FLASH_ADDRESS_SPACE_END   0x0000000023FFFFFFUL
 #define FLASH_ADDRESS_SPACE_SIZE  \
@@ -23,7 +25,7 @@ typedef struct _flash_t
     device_t dev;
 
     uint8_t *mem_ptr;
-    size_t mem_size;
+    size_t  mem_size;
 } flash_t;
 
 static uint8_t *
@@ -112,8 +114,8 @@ flash_init(address_space *parent_as)
     flash = calloc(1, sizeof(flash_t));
     flash->dev.name = "flash";
 
-    flash->mem_ptr = NULL;
-    flash->mem_size = 0;
+    flash->mem_size = FLASH_HEAD_SIZE;
+    flash->mem_ptr = calloc(FLASH_HEAD_SIZE, 1);
 
     init_address_space(&(flash->dev.as),
                        FLASH_ADDRESS_SPACE_START,
@@ -129,22 +131,20 @@ flash_init(address_space *parent_as)
     return (device_t *) flash;
 }
 
-size_t
-flash_add_file(device_t *dev, const char *filename, size_t base)
+void
+flash_add_file(device_t *dev, const char *filename)
 {
     uint8_t *ptr;
     size_t size;
     struct stat info;
     flash_t *flash = (flash_t *) dev;
+
     FILE *fp = fopen(filename, "rb");
 
     if (fp == NULL || fstat(fileno(fp), &info) < 0)
         panic("%s: bad filename %s\n", __func__, filename);
 
-    if (base < flash->mem_size)
-        panic("%s: bad base %x\n", __func__, base);
-
-    size = ROUND_UP((base + (size_t)info.st_size), 8);
+    size = ROUND_UP((flash->mem_size + (size_t)info.st_size), 8);
 
     if (size > FLASH_ADDRESS_SPACE_SIZE)
         panic("%s: bad size %x\n", __func__, size);
@@ -153,45 +153,37 @@ flash_add_file(device_t *dev, const char *filename, size_t base)
     if (ptr == NULL)
         panic("%s: alloc memory failed!\n", __func__);
 
-    if (flash->mem_size > 0) {
-        memcpy(ptr, flash->mem_ptr, flash->mem_size);
-        free(flash->mem_ptr);
-        flash->mem_ptr = NULL;
-    }
-
-    if (fread(ptr + base, 1, (size_t)info.st_size, fp) != info.st_size)
-        panic("%s: read file failed!\n", __func__);
-
-    flash->mem_size = size;
+    memcpy(ptr, flash->mem_ptr, flash->mem_size);
+    free(flash->mem_ptr);
     flash->mem_ptr = ptr;
+
+    if (fread(ptr + flash->mem_size, 1, (size_t)info.st_size, fp) != info.st_size)
+        panic("%s: read file failed!\n", __func__);
 
     fclose(fp);
 
-    if (elf64_hdr_check(ptr + base))
-        elf64_hdr_set_length(ptr + base, (uint64_t)info.st_size);
+    if (elf64_hdr_check(ptr + flash->mem_size))
+        elf64_hdr_set_length(ptr + flash->mem_size, (uint64_t)info.st_size);
 
     printf("%s: add file %s [0x%lx - 0x%lx)\n",
-           __func__, filename, base, size);
+           __func__, filename, flash->mem_size, size);
 
-    return size;
+    flash->mem_size = size;
+}
+
+static void
+sort_func(const char *name, void *opaque)
+{
+    device_t *dev = (device_t *)opaque;
+    char filename[256] = {0};
+    sprintf(filename, "%s%s", KMODULE_DIR, name);
+    flash_add_file(dev, filename);
 }
 
 void
 flash_load_modules(device_t *dev)
 {
-    module *mod;
-    list_head *mod_list;
-    size_t base = 0x100;
-
-    mod_list = sort_modules();
-
-    base = flash_add_file(dev, "image/startup.bin", base);
-
-    list_for_each_entry(mod, mod_list, list) {
-        char filename[256] = {0};
-        sprintf(filename, "%s%s", KMODULE_DIR, mod->name);
-        base = flash_add_file(dev, filename, base);
-    }
-
+    flash_add_file(dev, "image/startup.bin");
+    sort_modules(sort_func, dev);
     clear_modules();
 }

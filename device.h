@@ -29,8 +29,8 @@ clint_init(address_space *parent_as);
 device_t *
 flash_init(address_space *parent_as);
 
-size_t
-flash_add_file(device_t *dev, const char *filename, size_t base);
+void
+flash_add_file(device_t *dev, const char *filename);
 
 void
 flash_load_modules(device_t *dev);
