@@ -23,6 +23,8 @@
 
 extern address_space root_as;
 
+const char *_startpoint = NULL;
+
 uint64_t _pc = 0x1000;
 const char *vda_filename = "./image/test.raw";
 
@@ -55,11 +57,14 @@ fetch(address_space *as, uint32_t *inst)
 }
 
 int
-main(void)
+main(int argc, char **argv)
 {
     uint64_t i;
     device_t *rom;
     device_t *flash;
+
+    if (argc > 1)
+        _startpoint = argv[1];
 
     printf("[XEMU startup ...]\n");
 

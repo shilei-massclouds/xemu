@@ -13,6 +13,8 @@
 
 #define PAGE_OFFSET 0xffffffe000000000UL
 
+extern const char *_startpoint;
+
 static LIST_HEAD(modules);
 
 static LIST_HEAD(symbols);
@@ -340,6 +342,9 @@ sort_modules(sort_callback cb, void *opaque)
         check_dependency(mod);
 
     list_for_each_entry(mod, &modules, list) {
+        if (_startpoint && (strstr(mod->name, _startpoint) == NULL))
+            continue;
+
         traverse_dependency(mod, cb, opaque);
         if (mod->status != M_STATUS_DONE)
             panic("cyclic chain: '%s'.\n", mod->name);
