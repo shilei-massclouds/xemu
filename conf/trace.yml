@@ -1,6 +1,6 @@
 #
 # trace.yml
 #
-do_init_module:
-    enabled: false
-    ninst: 50
+#do_init_module:
+#    enabled: false
+#    ninst: 50
