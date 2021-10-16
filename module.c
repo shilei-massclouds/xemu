@@ -342,7 +342,7 @@ sort_modules(sort_callback cb, void *opaque)
         check_dependency(mod);
 
     list_for_each_entry(mod, &modules, list) {
-        if (_startpoint && (strstr(mod->name, _startpoint) == NULL))
+        if (_startpoint && strncmp(_startpoint, mod->name, strlen(_startpoint)))
             continue;
 
         traverse_dependency(mod, cb, opaque);
