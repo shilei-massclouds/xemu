@@ -25,7 +25,15 @@ static uint32_t ksym_num;
 static bool
 check_module(const char *name)
 {
-    char *p = strrchr(name, '.');
+    char *p;
+
+    if (_startpoint && !strncmp(name, _startpoint, strlen(_startpoint)))
+        return true;
+
+    if (!strncmp(name, "test_", 5))
+        return false;
+
+    p = strrchr(name, '.');
     return !strcmp(p, ".ko");
 }
 
@@ -308,7 +316,7 @@ traverse_dependency(module *mod, sort_callback cb, void *opaque)
 
         traverse_dependency(d->mod, cb, opaque);
         if (d->mod->status != M_STATUS_DONE) {
-            printf("cyclic chain: '%s'\n", d->mod->name);
+            printf("%s: cyclic chain: '%s'\n", __func__, d->mod->name);
             return;
         }
 
@@ -342,12 +350,13 @@ sort_modules(sort_callback cb, void *opaque)
         check_dependency(mod);
 
     list_for_each_entry(mod, &modules, list) {
-        if (_startpoint && strncmp(_startpoint, mod->name, strlen(_startpoint)))
+        if (_startpoint &&
+            strncmp(mod->name, _startpoint, strlen(_startpoint)))
             continue;
 
         traverse_dependency(mod, cb, opaque);
         if (mod->status != M_STATUS_DONE)
-            panic("cyclic chain: '%s'.\n", mod->name);
+            panic("%s: cyclic chain: '%s'.\n", __func__, mod->name);
     }
 
     list_for_each_safe(p, n, &symbols) {
