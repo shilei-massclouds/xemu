@@ -123,6 +123,9 @@ main(int argc, char **argv)
         uint64_t next_pc = 0;
         uint32_t inst = 0;
 
+        if (_pc < 0x1000)
+            panic("%s: bad pc 0x%lx\n", __func__, _pc);
+
         next_pc = handle_interrupt(_pc);
         if (next_pc) {
             /* An interrupt occurs */
