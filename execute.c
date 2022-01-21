@@ -319,6 +319,9 @@ execute(address_space *as,
         rd_val = csr_update(csr_addr, imm, CSR_OP_WRITE, &has_except);
         if (has_except)
             ret_pc = raise_except(pc, CAUSE_ILLEGAL_INST, 0);
+
+        if (csr_addr == 0)
+            fprintf(stderr, "#DEBUG:[%lx]: %lx\n", pc, imm);
         break;
 
     case CSRRSI:
