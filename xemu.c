@@ -149,7 +149,7 @@ main(int argc, char **argv)
         next_pc = execute(&root_as, _pc, next_pc,
                           op, rd, rs1, rs2, imm, csr_addr);
 
-        trace(_pc, op, rd, rs1, rs2, imm, csr_addr, opcode, inst);
+        //trace(_pc, op, rd, rs1, rs2, imm, csr_addr, opcode, inst);
 
         _pc = next_pc;
     }
