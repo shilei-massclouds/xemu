@@ -247,6 +247,9 @@ trace(uint64_t pc, op_t op,
                op_name(op), reg_name(rd), csr_name(csr_addr), reg_name(rs1));
         flag = HAS_RD | HAS_RS1;
         break;
+    case OP_NOP:
+        printf("  %s", op_name(op));
+        break;
     default:
         panic("%s: bad opcode %x for %s\n",
               __func__, opcode, op_name(op));

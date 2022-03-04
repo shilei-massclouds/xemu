@@ -18,6 +18,8 @@
 #include "virtio.h"
 #include "trace.h"
 
+#define DISABLE_TRACE
+
 #define VIRTIO_MMIO_AS_START_0  0x0000000010001000UL
 #define VIRTIO_MMIO_AS_END_0    0x0000000010001FFFUL
 
@@ -149,7 +151,9 @@ main(int argc, char **argv)
         next_pc = execute(&root_as, _pc, next_pc,
                           op, rd, rs1, rs2, imm, csr_addr);
 
-        //trace(_pc, op, rd, rs1, rs2, imm, csr_addr, opcode, inst);
+#ifndef DISABLE_TRACE
+        trace(_pc, op, rd, rs1, rs2, imm, csr_addr, opcode, inst);
+#endif
 
         _pc = next_pc;
     }
