@@ -52,7 +52,7 @@ fetch(address_space *as, uint32_t *inst)
 
     hi = (uint32_t)as_read(as, _pc + 2, 2, 0, &has_except);
     if (has_except)
-        return raise_except(_pc, CAUSE_INST_PAGE_FAULT, _pc);
+        return raise_except(_pc, CAUSE_INST_PAGE_FAULT, (_pc + 2));
 
     *inst = ((hi << 16) | lo);
     return 0;
